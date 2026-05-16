@@ -1,26 +1,322 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ─── Design Tokens ─── */
+@theme {
+  --font-mono: 'Share Tech Mono', 'Courier New', monospace;
+  --font-sans: 'Rajdhani', 'Segoe UI', sans-serif;
+
+  /* Base palette */
+  --color-bg:      #050A0E;
+  --color-panel:   #0D1B26;
+  --color-panel-2: #0A1520;
+  --color-border:  #1A3A50;
+  --color-border-2:#243D52;
+
+  /* Severity (psychology-driven) */
+  --color-critical: #FF1744;
+  --color-high:     #FF6D00;
+  --color-medium:   #FFD600;
+  --color-low:      #00E676;
+  --color-info:     #40C4FF;
+
+  /* Accent */
+  --color-cyan:    #00D4FF;
+  --color-green:   #00FF88;
+  --color-red:     #FF4444;
+  --color-orange:  #FF9900;
+  --color-yellow:  #FFD500;
+
+  /* Text */
+  --color-text:    #C8E8F0;
+  --color-muted:   #3D7A94;
+  --color-dim:     #1E4060;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* ─── Base Reset ─── */
+html, body {
+  background: #050A0E;
+  color: #C8E8F0;
+  font-family: 'Rajdhani', 'Segoe UI', sans-serif;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* ─── Keyframes ─── */
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+/* Slide in from left (page entrance) */
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* Slide in from right (toasts) */
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(120%); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* Slide out to right (toast dismiss) */
+@keyframes slideOutRight {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(120%); }
+}
+
+/* Slide in from top (dropdown/notification) */
+@keyframes slideInDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Modal scale-in */
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Skeleton shimmer */
+@keyframes shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position: 600px 0; }
+}
+
+/* Counter roll-up (applied via JS—transform trigger) */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* SLA breach pulse with glow */
+@keyframes slaPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(255,23,68,0.5); opacity: 1; }
+  50%  { box-shadow: 0 0 0 6px rgba(255,23,68,0); opacity: 0.7; }
+  100% { box-shadow: 0 0 0 0 rgba(255,23,68,0); opacity: 1; }
+}
+
+/* Progress bar shimmer fill */
+@keyframes progressFill {
+  from { width: 0%; }
+}
+
+/* Stagger fade-up for list items */
+@keyframes staggerFadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Spin for loaders */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Glow pulse for critical nodes */
+@keyframes glowCritical {
+  0%, 100% { box-shadow: 0 0 8px rgba(255,23,68,0.4); }
+  50%       { box-shadow: 0 0 20px rgba(255,23,68,0.8); }
+}
+
+/* ─── Animation Utility Classes ─── */
+
+.animate-pulse-dot {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.animate-blink {
+  animation: blink 1s step-end infinite;
+}
+
+.animate-slide-in {
+  animation: slideIn 0.25s ease-out forwards;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-out-right {
+  animation: slideOutRight 0.25s ease-in forwards;
+}
+
+.animate-slide-in-down {
+  animation: slideInDown 0.2s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-fade-up {
+  animation: fadeUp 0.3s ease-out forwards;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+.animate-glow-critical {
+  animation: glowCritical 1.5s ease-in-out infinite;
+}
+
+/* SLA breach pulse */
+.sla-pulse {
+  animation: slaPulse 1.5s ease-out infinite;
+}
+
+/* Skeleton shimmer */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #0D1B26 0%,
+    #1A3A50 40%,
+    #0D1B26 80%
+  );
+  background-size: 600px 100%;
+  animation: shimmer 1.5s infinite linear;
+  border-radius: 4px;
+}
+
+/* Card hover lift */
+.card-hover {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+  border-color: #243D52;
+}
+
+/* Stagger list items */
+.stagger-item {
+  animation: staggerFadeUp 0.3s ease-out both;
+}
+.stagger-item:nth-child(1)  { animation-delay: 0ms; }
+.stagger-item:nth-child(2)  { animation-delay: 40ms; }
+.stagger-item:nth-child(3)  { animation-delay: 80ms; }
+.stagger-item:nth-child(4)  { animation-delay: 120ms; }
+.stagger-item:nth-child(5)  { animation-delay: 160ms; }
+.stagger-item:nth-child(6)  { animation-delay: 200ms; }
+.stagger-item:nth-child(7)  { animation-delay: 240ms; }
+.stagger-item:nth-child(8)  { animation-delay: 280ms; }
+.stagger-item:nth-child(9)  { animation-delay: 320ms; }
+.stagger-item:nth-child(10) { animation-delay: 360ms; }
+
+/* Progress bar animated fill */
+.progress-bar-fill {
+  animation: progressFill 0.8s ease-out both;
+}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: #050A0E;
+}
+::-webkit-scrollbar-thumb {
+  background: #1A3A50;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #00D4FF;
+}
+
+/* ─── Selection ─── */
+::selection {
+  background: rgba(0, 212, 255, 0.2);
+  color: #C8E8F0;
+}
+
+/* ─── Focus ring (keyboard nav) ─── */
+:focus-visible {
+  outline: 1.5px solid #00D4FF;
+  outline-offset: 2px;
+}
+
+/* ─── Modal backdrop ─── */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 10, 14, 0.85);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeUp 0.15s ease-out;
+}
+
+/* ─── Status badge glow ─── */
+.badge-critical {
+  background: rgba(255, 23, 68, 0.12);
+  color: #FF1744;
+  border: 1px solid rgba(255, 23, 68, 0.3);
+}
+.badge-high {
+  background: rgba(255, 109, 0, 0.12);
+  color: #FF6D00;
+  border: 1px solid rgba(255, 109, 0, 0.3);
+}
+.badge-medium {
+  background: rgba(255, 214, 0, 0.1);
+  color: #FFD600;
+  border: 1px solid rgba(255, 214, 0, 0.25);
+}
+.badge-low {
+  background: rgba(0, 230, 118, 0.1);
+  color: #00E676;
+  border: 1px solid rgba(0, 230, 118, 0.25);
+}
+.badge-info {
+  background: rgba(64, 196, 255, 0.1);
+  color: #40C4FF;
+  border: 1px solid rgba(64, 196, 255, 0.25);
+}
+
+/* ─── Print / PDF Export ─── */
+@media print {
+  .no-print,
+  nav,
+  aside,
+  header,
+  footer,
+  button {
+    display: none !important;
   }
-}
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  .print-only {
+    display: block !important;
+  }
+
+  body {
+    background: white !important;
+    color: #111 !important;
+    font-family: 'Arial', sans-serif !important;
+  }
+
+  .print-panel {
+    background: white !important;
+    border: 1px solid #ccc !important;
+    page-break-inside: avoid;
+  }
+
+  .print-break-before {
+    page-break-before: always;
+  }
+
+  a {
+    color: #111 !important;
+    text-decoration: none !important;
+  }
 }
