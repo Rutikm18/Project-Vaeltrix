@@ -26,7 +26,6 @@ export function PageShell({
   const [sessionTime, setSessionTime] = useState(0);
   const sessionStart = useRef(Date.now());
 
-  /* UTC clock */
   useEffect(() => {
     const update = () =>
       setUtcTime(new Date().toISOString().replace("T", " ").slice(0, 19) + " UTC");
@@ -35,7 +34,6 @@ export function PageShell({
     return () => clearInterval(id);
   }, []);
 
-  /* Session timer */
   useEffect(() => {
     const id = setInterval(() => {
       setSessionTime(Math.floor((Date.now() - sessionStart.current) / 1000));
@@ -54,8 +52,8 @@ export function PageShell({
       style={{
         display: "flex",
         height: "100vh",
-        background: "#050A0E",
-        fontFamily: "'Rajdhani', 'Segoe UI', sans-serif",
+        background: "#08090D",
+        fontFamily: "'Inter', sans-serif",
         overflow: "hidden",
       }}
     >
@@ -65,64 +63,70 @@ export function PageShell({
           className="md:hidden"
           onClick={() => setSidebarOpen(false)}
           style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(5,10,14,0.8)",
+            position: "fixed", inset: 0,
+            background: "rgba(8,9,13,0.7)",
             zIndex: 40,
-            backdropFilter: "blur(2px)",
+            backdropFilter: "blur(4px)",
           }}
         />
       )}
 
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      {/* Main area */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
-        {/* Top header */}
+
+        {/* ── Header ─────────────────────────────────────────────────── */}
         <header
           style={{
             height: 52,
-            borderBottom: "1px solid #1A3A50",
+            background: "#12141A",
+            borderBottom: "0.5px solid #1E2028",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
             padding: "0 20px",
             flexShrink: 0,
-            background: "#050A0E",
             gap: 16,
           }}
         >
+          {/* Left — title */}
           <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
             <button
               className="md:hidden"
               onClick={() => setSidebarOpen(true)}
-              style={{ background: "none", border: "none", cursor: "pointer", padding: 0, flexShrink: 0 }}
+              style={{
+                background: "none", border: "none", cursor: "pointer",
+                padding: 0, flexShrink: 0,
+              }}
             >
-              <Menu size={20} color="#00D4FF" />
+              <Menu size={20} color="#00C882" />
             </button>
+
             <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
               <span
                 style={{
-                  fontFamily: "'Share Tech Mono', monospace",
-                  fontSize: 15,
-                  color: "#00D4FF",
-                  letterSpacing: 2,
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: "#E8ECF0",
                   flexShrink: 0,
                 }}
               >
                 {title}
               </span>
+
               {subtitle && (
                 <>
-                  <span style={{ color: "#1A3A50", flexShrink: 0 }}>|</span>
+                  <span style={{ color: "#2A2D38", flexShrink: 0, fontSize: 16 }}>/</span>
                   <span
                     style={{
-                      fontFamily: "'Share Tech Mono', monospace",
-                      fontSize: 11,
-                      color: "#3D7A94",
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: 12,
+                      color: "#8C95A0",
                       whiteSpace: "nowrap",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
+                      fontWeight: 400,
                     }}
                   >
                     {subtitle}
@@ -130,64 +134,91 @@ export function PageShell({
                 </>
               )}
             </div>
+
+            {/* Live indicator */}
             <span
               className="animate-pulse-dot"
               style={{
                 display: "inline-block",
-                width: 7,
-                height: 7,
+                width: 6,
+                height: 6,
                 borderRadius: "50%",
-                background: "#00FF88",
+                background: "#00C882",
                 flexShrink: 0,
               }}
             />
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 16, flexShrink: 0 }}>
+          {/* Right — status + actions */}
+          <div style={{ display: "flex", alignItems: "center", gap: 14, flexShrink: 0 }}>
             {headerActions && (
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 {headerActions}
               </div>
             )}
+
             {statusItems?.map((item, i) => (
               <React.Fragment key={i}>
-                <span style={{ color: "#1A3A50", fontSize: 14 }}>|</span>
-                <span
-                  style={{
-                    fontFamily: "'Share Tech Mono', monospace",
-                    fontSize: 11,
-                    color: item.color ?? "#C8E8F0",
-                  }}
-                >
-                  {item.label}: <span style={{ color: item.color ?? "#C8E8F0" }}>{item.value}</span>
-                </span>
+                <span style={{ height: 14, width: 1, background: "#1E2028", flexShrink: 0 }} />
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span
+                    style={{
+                      fontFamily: "'JetBrains Mono', monospace",
+                      fontSize: 10,
+                      color: "#555C68",
+                      letterSpacing: 0.5,
+                    }}
+                  >
+                    {item.label}
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "'JetBrains Mono', monospace",
+                      fontSize: 12,
+                      fontWeight: 500,
+                      color: item.color ?? "#E8ECF0",
+                    }}
+                  >
+                    {item.value}
+                  </span>
+                </div>
               </React.Fragment>
             ))}
-            <span style={{ color: "#1A3A50", fontSize: 14 }}>|</span>
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#3D7A94" }}>
+
+            <span style={{ height: 14, width: 1, background: "#1E2028" }} />
+
+            <span
+              style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 11,
+                color: "#555C68",
+                letterSpacing: 0.3,
+              }}
+            >
               {fmtSession(sessionTime)}
             </span>
           </div>
         </header>
 
-        {/* Page content */}
+        {/* ── Page content ───────────────────────────────────────────── */}
         <main
           style={{
             flex: 1,
             overflowY: "auto",
             padding: noPadding ? 0 : 20,
             position: "relative",
+            background: "#08090D",
           }}
         >
           {children}
         </main>
 
-        {/* Footer status bar */}
+        {/* ── Footer status bar ──────────────────────────────────────── */}
         <footer
           style={{
             height: 28,
-            borderTop: "1px solid #1A3A50",
-            background: "#0D1B26",
+            background: "#0D0F14",
+            borderTop: "0.5px solid #1E2028",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
@@ -196,24 +227,50 @@ export function PageShell({
             gap: 16,
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             {[
-              { label: "ENGINE", color: "#00FF88" },
-              { label: "API",    color: "#00FF88" },
-              { label: "DB",     color: "#00FF88" },
+              { label: "ENGINE", color: "#00C882" },
+              { label: "API",    color: "#00C882" },
+              { label: "DB",     color: "#00C882" },
             ].map((s, i) => (
               <React.Fragment key={i}>
-                {i > 0 && <span style={{ color: "#1A3A50" }}>|</span>}
-                <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#3D7A94" }}>
-                  {s.label} <span style={{ color: s.color }}>●</span>
+                {i > 0 && <span style={{ width: 1, height: 10, background: "#1E2028" }} />}
+                <span
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: 10,
+                    color: "#555C68",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 5,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 5,
+                      height: 5,
+                      borderRadius: "50%",
+                      background: s.color,
+                      display: "inline-block",
+                    }}
+                  />
+                  {s.label}
                 </span>
               </React.Fragment>
             ))}
           </div>
-          <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#3D7A94" }}>
+
+          <div
+            style={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 10,
+              color: "#555C68",
+            }}
+          >
             {utcTime} · ADVERSA v1.0
           </div>
         </footer>
+
       </div>
     </div>
   );

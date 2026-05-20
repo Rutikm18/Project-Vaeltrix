@@ -67,12 +67,12 @@ const graphStats = [
   { label: "Validated exploitable", value: 6, color: "#FF4444" },
   { label: "AD paths to DA", value: 3, color: "#FF9900" },
   { label: "Lateral move vectors", value: 9, color: "#FF9900" },
-  { label: "Segmentation gaps", value: 2, color: "#00D4FF" },
-  { label: "Evidence confidence avg", value: "87%", color: "#00FF88" },
+  { label: "Segmentation gaps", value: 2, color: "var(--adv-accent)" },
+  { label: "Evidence confidence avg", value: "87%", color: "#059669" },
 ];
 
 const criticalChain = [
-  { step: "WS-042", action: "LLMNR Poison", accent: "#00D4FF" },
+  { step: "WS-042", action: "LLMNR Poison", accent: "#2563EB" },
   { step: "svc_backup", action: "Kerberoast", accent: "#FF9900" },
   { step: "DC01", action: "Silver Ticket", accent: "#FF4444" },
   { step: "DOMAIN ADMIN", action: "Impersonation", accent: "#FF4444", warning: "⚠" },
@@ -93,13 +93,13 @@ function severityColor(s: Finding["severity"]) {
     case "MEDIUM":
       return "#FFD500";
     default:
-      return "#3D7A94";
+      return "#64748B";
   }
 }
 
 function barColor(v: number) {
-  if (v >= 90) return "#00FF88";
-  if (v >= 70) return "#00D4FF";
+  if (v >= 90) return "#059669";
+  if (v >= 70) return "#2563EB";
   if (v >= 50) return "#FF9900";
   return "#FF4444";
 }
@@ -107,7 +107,7 @@ function barColor(v: number) {
 /* ─── Subcomponents ─── */
 
 function StatusDot({ status }: { status: Agent["status"] }) {
-  const color = status === "ACTIVE" ? "#00FF88" : status === "THINKING" ? "#FF9900" : "#3D7A94";
+  const color = status === "ACTIVE" ? "#059669" : status === "THINKING" ? "#FF9900" : "#64748B";
   return (
     <span
       className={status === "ACTIVE" || status === "THINKING" ? "animate-pulse-dot" : ""}
@@ -152,9 +152,9 @@ function AnimatedMessage({ content, isUser }: { content: string; isUser: boolean
             {isSectionHeader ? (
               <span
                 style={{
-                  fontFamily: "'Share Tech Mono', monospace",
+                  fontFamily: "'JetBrains Mono', monospace",
                   fontSize: 12,
-                  color: "#00D4FF",
+                  color: "var(--adv-accent)",
                   letterSpacing: 1,
                 }}
               >
@@ -163,9 +163,9 @@ function AnimatedMessage({ content, isUser }: { content: string; isUser: boolean
             ) : (
               <span
                 style={{
-                  fontFamily: "'Share Tech Mono', monospace",
+                  fontFamily: "'JetBrains Mono', monospace",
                   fontSize: 12,
-                  color: "#C8E8F0",
+                  color: "var(--adv-text)",
                   whiteSpace: "pre-wrap",
                 }}
               >
@@ -334,8 +334,8 @@ Verify network connectivity and API key configuration.`,
       style={{
         display: "flex",
         height: "100vh",
-        background: "#050A0E",
-        fontFamily: "'Rajdhani', 'Segoe UI', sans-serif",
+        background: "var(--adv-bg)",
+        fontFamily: "'Inter', sans-serif",
         overflow: "hidden",
       }}
     >
@@ -343,7 +343,7 @@ Verify network connectivity and API key configuration.`,
         <div
           className="md:hidden"
           onClick={() => setSidebarOpen(false)}
-          style={{ position: "fixed", inset: 0, background: "rgba(5,10,14,0.75)", zIndex: 40 }}
+          style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.75)", zIndex: 40 }}
         />
       )}
 
@@ -355,13 +355,13 @@ Verify network connectivity and API key configuration.`,
         <header
           style={{
             height: 52,
-            borderBottom: "1px solid #1A3A50",
+            borderBottom: "1px solid var(--adv-border)",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
             padding: "0 20px",
             flexShrink: 0,
-            background: "#050A0E",
+            background: "var(--adv-bg)",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -370,13 +370,13 @@ Verify network connectivity and API key configuration.`,
               onClick={() => setSidebarOpen(true)}
               style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
             >
-              <Menu size={20} color="#00D4FF" />
+              <Menu size={20} color="#2563EB" />
             </button>
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 18, color: "#00D4FF", letterSpacing: 3 }}>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 18, color: "var(--adv-accent)", letterSpacing: 3 }}>
               ADVERSA
             </span>
-            <span style={{ color: "#1A3A50" }}>|</span>
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#3D7A94" }}>
+            <span style={{ color: "var(--adv-border)" }}>|</span>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--adv-text-muted)" }}>
               AI OFFENSIVE BRAIN v0.9.1
             </span>
             <span
@@ -386,10 +386,10 @@ Verify network connectivity and API key configuration.`,
                 width: 8,
                 height: 8,
                 borderRadius: "50%",
-                background: "#00FF88",
+                background: "#059669",
               }}
             />
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#00FF88" }}>ONLINE</span>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#059669" }}>ONLINE</span>
           </div>
         </header>
 
@@ -400,7 +400,7 @@ Verify network connectivity and API key configuration.`,
             <div
               style={{
                 padding: "10px 20px",
-                borderBottom: "1px solid #1A3A50",
+                borderBottom: "1px solid var(--adv-border)",
                 display: "flex",
                 gap: 8,
                 overflowX: "auto",
@@ -412,10 +412,10 @@ Verify network connectivity and API key configuration.`,
                   key={i}
                   onClick={() => handleQuickPrompt(p)}
                   style={{
-                    fontFamily: "'Share Tech Mono', monospace",
+                    fontFamily: "'JetBrains Mono', monospace",
                     fontSize: 10,
-                    color: "#3D7A94",
-                    border: "1px solid #1A3A50",
+                    color: "var(--adv-text-muted)",
+                    border: "1px solid var(--adv-border)",
                     borderRadius: 6,
                     padding: "6px 12px",
                     background: "transparent",
@@ -424,12 +424,12 @@ Verify network connectivity and API key configuration.`,
                     transition: "color 0.15s ease, border-color 0.15s ease",
                   }}
                   onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.color = "#00D4FF";
-                    (e.currentTarget as HTMLElement).style.borderColor = "#00D4FF";
+                    (e.currentTarget as HTMLElement).style.color = "#2563EB";
+                    (e.currentTarget as HTMLElement).style.borderColor = "#2563EB";
                   }}
                   onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.color = "#3D7A94";
-                    (e.currentTarget as HTMLElement).style.borderColor = "#1A3A50";
+                    (e.currentTarget as HTMLElement).style.color = "#64748B";
+                    (e.currentTarget as HTMLElement).style.borderColor = "#E2E8F0";
                   }}
                 >
                   {p}
@@ -461,12 +461,12 @@ Verify network connectivity and API key configuration.`,
                       style={{
                         background:
                           msg.role === "user"
-                            ? "rgba(0,212,255,0.04)"
-                            : "#0D1B26",
+                            ? "rgba(37,99,235,0.04)"
+                            : "#FFFFFF",
                         border:
                           msg.role === "user"
                             ? "1px solid #1E4560"
-                            : "1px solid #1A3A50",
+                            : "1px solid #E2E8F0",
                         borderRadius:
                           msg.role === "user" ? "8px 2px 8px 8px" : "2px 8px 8px 8px",
                         padding: "12px 16px",
@@ -479,13 +479,13 @@ Verify network connectivity and API key configuration.`,
                             position: "absolute",
                             top: -10,
                             left: 12,
-                            fontFamily: "'Share Tech Mono', monospace",
+                            fontFamily: "'JetBrains Mono', monospace",
                             fontSize: 10,
-                            color: "#00D4FF",
-                            border: "1px solid #1A3A50",
+                            color: "var(--adv-accent)",
+                            border: "1px solid var(--adv-border)",
                             borderRadius: 4,
                             padding: "1px 6px",
-                            background: "#0D1B26",
+                            background: "var(--adv-panel)",
                           }}
                         >
                           AI
@@ -495,9 +495,9 @@ Verify network connectivity and API key configuration.`,
                     </div>
                     <div
                       style={{
-                        fontFamily: "'Share Tech Mono', monospace",
+                        fontFamily: "'JetBrains Mono', monospace",
                         fontSize: 10,
-                        color: "#3D7A94",
+                        color: "var(--adv-text-muted)",
                         marginTop: 4,
                         textAlign: msg.role === "user" ? "right" : "left",
                       }}
@@ -520,7 +520,7 @@ Verify network connectivity and API key configuration.`,
                             width: 6,
                             height: 6,
                             borderRadius: "50%",
-                            background: "#00D4FF",
+                            background: "#2563EB",
                             animationDelay: `${i * 200}ms`,
                           }}
                         />
@@ -528,9 +528,9 @@ Verify network connectivity and API key configuration.`,
                     </div>
                     <span
                       style={{
-                        fontFamily: "'Share Tech Mono', monospace",
+                        fontFamily: "'JetBrains Mono', monospace",
                         fontSize: 11,
-                        color: "#00D4FF",
+                        color: "var(--adv-accent)",
                       }}
                     >
                       Offensive brain reasoning...
@@ -544,10 +544,10 @@ Verify network connectivity and API key configuration.`,
             {/* Input Area */}
             <div
               style={{
-                borderTop: "1px solid #1A3A50",
+                borderTop: "1px solid var(--adv-border)",
                 padding: "12px 20px",
                 flexShrink: 0,
-                background: "#050A0E",
+                background: "var(--adv-bg)",
               }}
             >
               <div
@@ -555,13 +555,13 @@ Verify network connectivity and API key configuration.`,
                   display: "flex",
                   alignItems: "flex-end",
                   gap: 8,
-                  background: "#0D1B26",
-                  border: "1px solid #1A3A50",
+                  background: "var(--adv-panel)",
+                  border: "1px solid var(--adv-border)",
                   borderRadius: 6,
                   padding: "8px 12px",
                 }}
               >
-                <span style={{ fontFamily: "monospace", fontSize: 14, color: "#00D4FF", paddingBottom: 4 }}>❱</span>
+                <span style={{ fontFamily: "monospace", fontSize: 14, color: "var(--adv-accent)", paddingBottom: 4 }}>❱</span>
                 <textarea
                   ref={textareaRef}
                   value={inputValue}
@@ -574,8 +574,8 @@ Verify network connectivity and API key configuration.`,
                     background: "transparent",
                     border: "none",
                     outline: "none",
-                    color: "#C8E8F0",
-                    fontFamily: "'Share Tech Mono', monospace",
+                    color: "var(--adv-text)",
+                    fontFamily: "'JetBrains Mono', monospace",
                     fontSize: 12,
                     resize: "none",
                     minHeight: 20,
@@ -591,9 +591,9 @@ Verify network connectivity and API key configuration.`,
                     padding: "6px 14px",
                     borderRadius: 4,
                     border: "none",
-                    background: inputValue.trim() ? "#00D4FF" : "rgba(0,212,255,0.15)",
-                    color: inputValue.trim() ? "#050A0E" : "#3D7A94",
-                    fontFamily: "'Share Tech Mono', monospace",
+                    background: inputValue.trim() ? "#2563EB" : "rgba(37,99,235,0.15)",
+                    color: inputValue.trim() ? "#F8FAFC" : "#64748B",
+                    fontFamily: "'JetBrains Mono', monospace",
                     fontSize: 11,
                     cursor: inputValue.trim() ? "pointer" : "not-allowed",
                     transition: "background 0.15s ease, color 0.15s ease",
@@ -611,9 +611,9 @@ Verify network connectivity and API key configuration.`,
                   display: "flex",
                   justifyContent: "space-between",
                   marginTop: 6,
-                  fontFamily: "'Share Tech Mono', monospace",
+                  fontFamily: "'JetBrains Mono', monospace",
                   fontSize: 10,
-                  color: "#3D7A94",
+                  color: "var(--adv-text-muted)",
                 }}
               >
                 <span>ENTER to send · SHIFT+ENTER for newline</span>
@@ -629,8 +629,8 @@ Verify network connectivity and API key configuration.`,
             className="hidden lg:block"
             style={{
               width: 300,
-              borderLeft: "1px solid #1A3A50",
-              background: "#0D1B26",
+              borderLeft: "1px solid var(--adv-border)",
+              background: "var(--adv-panel)",
               display: "flex",
               flexDirection: "column",
               overflow: "hidden",
@@ -641,7 +641,7 @@ Verify network connectivity and API key configuration.`,
             <div
               style={{
                 display: "flex",
-                borderBottom: "1px solid #1A3A50",
+                borderBottom: "1px solid var(--adv-border)",
               }}
             >
               {tabs.map((t, i) => (
@@ -651,11 +651,11 @@ Verify network connectivity and API key configuration.`,
                   style={{
                     flex: 1,
                     padding: "10px 0",
-                    background: activeTab === i ? "rgba(0,212,255,0.04)" : "transparent",
+                    background: activeTab === i ? "rgba(37,99,235,0.04)" : "transparent",
                     border: "none",
-                    borderBottom: activeTab === i ? "2px solid #00D4FF" : "2px solid transparent",
-                    color: activeTab === i ? "#C8E8F0" : "#3D7A94",
-                    fontFamily: "'Share Tech Mono', monospace",
+                    borderBottom: activeTab === i ? "2px solid #2563EB" : "2px solid transparent",
+                    color: activeTab === i ? "#0F172A" : "#64748B",
+                    fontFamily: "'JetBrains Mono', monospace",
                     fontSize: 11,
                     letterSpacing: 1,
                     cursor: "pointer",
@@ -680,25 +680,25 @@ Verify network connectivity and API key configuration.`,
                         alignItems: "center",
                         gap: 10,
                         padding: "10px 16px",
-                        borderBottom: i < agents.length - 1 ? "1px solid rgba(26,58,80,0.25)" : "none",
+                        borderBottom: i < agents.length - 1 ? "1px solid rgba(37,99,235,0.06)" : "none",
                       }}
                     >
                       <StatusDot status={agent.status} />
                       <div style={{ minWidth: 0, flex: 1 }}>
                         <div
                           style={{
-                            fontFamily: "'Share Tech Mono', monospace",
+                            fontFamily: "'JetBrains Mono', monospace",
                             fontSize: 12,
-                            color: "#C8E8F0",
+                            color: "var(--adv-text)",
                           }}
                         >
                           {agent.name}
                         </div>
                         <div
                           style={{
-                            fontFamily: "'Share Tech Mono', monospace",
+                            fontFamily: "'JetBrains Mono', monospace",
                             fontSize: 10,
-                            color: "#3D7A94",
+                            color: "var(--adv-text-muted)",
                             marginTop: 2,
                             whiteSpace: "nowrap",
                             overflow: "hidden",
@@ -719,8 +719,8 @@ Verify network connectivity and API key configuration.`,
                     <div
                       key={f.id}
                       style={{
-                        background: "#050A0E",
-                        border: "1px solid #1A3A50",
+                        background: "var(--adv-bg)",
+                        border: "1px solid var(--adv-border)",
                         borderRadius: 4,
                         padding: "10px 12px",
                       }}
@@ -728,16 +728,16 @@ Verify network connectivity and API key configuration.`,
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
                         <span
                           style={{
-                            fontFamily: "'Share Tech Mono', monospace",
+                            fontFamily: "'JetBrains Mono', monospace",
                             fontSize: 10,
-                            color: "#3D7A94",
+                            color: "var(--adv-text-muted)",
                           }}
                         >
                           {f.id}
                         </span>
                         <span
                           style={{
-                            fontFamily: "'Share Tech Mono', monospace",
+                            fontFamily: "'JetBrains Mono', monospace",
                             fontSize: 9,
                             padding: "1px 6px",
                             borderRadius: 3,
@@ -750,10 +750,10 @@ Verify network connectivity and API key configuration.`,
                       </div>
                       <div
                         style={{
-                          fontFamily: "'Rajdhani', 'Segoe UI', sans-serif",
+                          fontFamily: "'Inter', sans-serif",
                           fontSize: 13,
                           fontWeight: 500,
-                          color: "#C8E8F0",
+                          color: "var(--adv-text)",
                           lineHeight: 1.4,
                           marginBottom: 6,
                         }}
@@ -762,9 +762,9 @@ Verify network connectivity and API key configuration.`,
                       </div>
                       <div
                         style={{
-                          fontFamily: "'Share Tech Mono', monospace",
+                          fontFamily: "'JetBrains Mono', monospace",
                           fontSize: 10,
-                          color: "#3D7A94",
+                          color: "var(--adv-text-muted)",
                           marginBottom: 6,
                         }}
                       >
@@ -775,7 +775,7 @@ Verify network connectivity and API key configuration.`,
                           style={{
                             flex: 1,
                             height: 3,
-                            background: "rgba(26,58,80,0.3)",
+                            background: "rgba(37,99,235,0.06)",
                             borderRadius: 1,
                             overflow: "hidden",
                           }}
@@ -791,7 +791,7 @@ Verify network connectivity and API key configuration.`,
                         </div>
                         <span
                           style={{
-                            fontFamily: "'Share Tech Mono', monospace",
+                            fontFamily: "'JetBrains Mono', monospace",
                             fontSize: 10,
                             color: barColor(f.confidence),
                             width: 30,
@@ -817,21 +817,21 @@ Verify network connectivity and API key configuration.`,
                           justifyContent: "space-between",
                           alignItems: "center",
                           padding: "6px 0",
-                          borderBottom: "1px solid rgba(26,58,80,0.2)",
+                          borderBottom: "1px solid rgba(37,99,235,0.06)",
                         }}
                       >
                         <span
                           style={{
-                            fontFamily: "'Share Tech Mono', monospace",
+                            fontFamily: "'JetBrains Mono', monospace",
                             fontSize: 11,
-                            color: "#3D7A94",
+                            color: "var(--adv-text-muted)",
                           }}
                         >
                           {s.label}
                         </span>
                         <span
                           style={{
-                            fontFamily: "'Share Tech Mono', monospace",
+                            fontFamily: "'JetBrains Mono', monospace",
                             fontSize: 11,
                             color: s.color,
                             fontWeight: 600,
@@ -845,13 +845,13 @@ Verify network connectivity and API key configuration.`,
 
                   <div
                     style={{
-                      fontFamily: "'Share Tech Mono', monospace",
+                      fontFamily: "'JetBrains Mono', monospace",
                       fontSize: 12,
-                      color: "#C8E8F0",
+                      color: "var(--adv-text)",
                       letterSpacing: 1,
                       marginBottom: 10,
                       paddingTop: 8,
-                      borderTop: "1px solid #1A3A50",
+                      borderTop: "1px solid var(--adv-border)",
                     }}
                   >
                     CRITICAL PATH CHAIN
@@ -865,7 +865,7 @@ Verify network connectivity and API key configuration.`,
                         top: 0,
                         bottom: 0,
                         width: 2,
-                        background: "#1A3A50",
+                        background: "#E2E8F0",
                       }}
                     />
                     {criticalChain.map((c, i) => (
@@ -879,9 +879,9 @@ Verify network connectivity and API key configuration.`,
                       >
                         <div
                           style={{
-                            fontFamily: "'Share Tech Mono', monospace",
+                            fontFamily: "'JetBrains Mono', monospace",
                             fontSize: 11,
-                            color: "#C8E8F0",
+                            color: "var(--adv-text)",
                             display: "flex",
                             alignItems: "center",
                             gap: 6,
@@ -892,9 +892,9 @@ Verify network connectivity and API key configuration.`,
                         </div>
                         <div
                           style={{
-                            fontFamily: "'Share Tech Mono', monospace",
+                            fontFamily: "'JetBrains Mono', monospace",
                             fontSize: 10,
-                            color: "#3D7A94",
+                            color: "var(--adv-text-muted)",
                             marginTop: 2,
                           }}
                         >

@@ -147,8 +147,8 @@ const findings: SegmentationFinding[] = [
 
 /* ─── Helpers ─── */
 function scoreColor(s: number) {
-  if (s >= 85) return "#00FF88";
-  if (s >= 70) return "#00D4FF";
+  if (s >= 85) return "#059669";
+  if (s >= 70) return "#2563EB";
   if (s >= 55) return "#FF9900";
   return "#FF4444";
 }
@@ -157,11 +157,11 @@ function sevColor(s: string) {
   if (s === "CRITICAL") return "#FF4444";
   if (s === "HIGH")     return "#FF9900";
   if (s === "MEDIUM")   return "#FFD500";
-  return "#00FF88";
+  return "#059669";
 }
 
 function statusIndicator(s: Zone["status"]) {
-  if (s === "SECURE")        return { color: "#00FF88", label: "SECURE" };
+  if (s === "SECURE")        return { color: "#059669", label: "SECURE" };
   if (s === "MISCONFIGURED") return { color: "#FF4444", label: "MISCONFIGURED" };
   return { color: "#FF9900", label: "VULNERABLE" };
 }
@@ -179,8 +179,8 @@ export default function SegmentationPage() {
       style={{
         display: "flex",
         height: "100vh",
-        background: "#050A0E",
-        fontFamily: "'Rajdhani', 'Segoe UI', sans-serif",
+        background: "var(--adv-bg)",
+        fontFamily: "'Inter', sans-serif",
         overflow: "hidden",
       }}
     >
@@ -188,7 +188,7 @@ export default function SegmentationPage() {
         <div
           className="md:hidden"
           onClick={() => setSidebarOpen(false)}
-          style={{ position: "fixed", inset: 0, background: "rgba(5,10,14,0.75)", zIndex: 40 }}
+          style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.75)", zIndex: 40 }}
         />
       )}
 
@@ -196,31 +196,31 @@ export default function SegmentationPage() {
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {/* Header */}
-        <header style={{ height: 52, borderBottom: "1px solid #1A3A50", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px", flexShrink: 0, background: "#050A0E" }}>
+        <header style={{ height: 52, borderBottom: "1px solid var(--adv-border)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px", flexShrink: 0, background: "var(--adv-bg)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <button className="md:hidden" onClick={() => setSidebarOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-              <Menu size={20} color="#00D4FF" />
+              <Menu size={20} color="#2563EB" />
             </button>
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 18, color: "#00D4FF", letterSpacing: 3 }}>ADVERSA</span>
-            <span style={{ color: "#1A3A50" }}>|</span>
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#3D7A94" }}>SEGMENTATION v0.9.1</span>
-            <Grid size={14} color="#00D4FF" style={{ marginLeft: 4 }} />
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 18, color: "var(--adv-accent)", letterSpacing: 3 }}>ADVERSA</span>
+            <span style={{ color: "var(--adv-border)" }}>|</span>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--adv-text-muted)" }}>SEGMENTATION v0.9.1</span>
+            <Grid size={14} color="#2563EB" style={{ marginLeft: 4 }} />
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#FF4444" }}>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#FF4444" }}>
               {aclRules.filter((r) => r.action !== r.expectedAction && r.severity === "CRITICAL").length} CRITICAL ACL GAPS
             </span>
-            <span style={{ color: "#1A3A50" }}>|</span>
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#FF9900" }}>
+            <span style={{ color: "var(--adv-border)" }}>|</span>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#FF9900" }}>
               {zones.filter((z) => z.status !== "SECURE").length}/{zones.length} ZONES AT RISK
             </span>
           </div>
         </header>
 
         {/* Tabs */}
-        <div style={{ display: "flex", borderBottom: "1px solid #1A3A50", flexShrink: 0 }}>
+        <div style={{ display: "flex", borderBottom: "1px solid var(--adv-border)", flexShrink: 0 }}>
           {tabs.map((tab, i) => (
-            <button key={tab} onClick={() => setActiveTab(i)} style={{ padding: "10px 20px", background: activeTab === i ? "rgba(0,212,255,0.04)" : "transparent", border: "none", borderBottom: activeTab === i ? "2px solid #00D4FF" : "2px solid transparent", color: activeTab === i ? "#C8E8F0" : "#3D7A94", fontFamily: "'Share Tech Mono', monospace", fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}>
+            <button key={tab} onClick={() => setActiveTab(i)} style={{ padding: "10px 20px", background: activeTab === i ? "rgba(37,99,235,0.04)" : "transparent", border: "none", borderBottom: activeTab === i ? "2px solid #2563EB" : "2px solid transparent", color: activeTab === i ? "#0F172A" : "#64748B", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}>
               {tab}
             </button>
           ))}
@@ -238,8 +238,8 @@ export default function SegmentationPage() {
                     <div
                       key={zone.id}
                       style={{
-                        background: "#0D1B26",
-                        border: `1px solid ${zone.status === "MISCONFIGURED" ? "#FF444440" : zone.status === "VULNERABLE" ? "#FF990040" : "#1A3A50"}`,
+                        background: "var(--adv-panel)",
+                        border: `1px solid ${zone.status === "MISCONFIGURED" ? "#FF444440" : zone.status === "VULNERABLE" ? "#FF990040" : "#E2E8F0"}`,
                         borderRadius: 6,
                         padding: "16px",
                         position: "relative",
@@ -249,26 +249,26 @@ export default function SegmentationPage() {
                       <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: si.color }} />
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
                         <div>
-                          <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 14, color: "#C8E8F0", letterSpacing: 1 }}>{zone.name}</div>
-                          <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94", marginTop: 2 }}>{zone.cidr}</div>
+                          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 14, color: "var(--adv-text)", letterSpacing: 1 }}>{zone.name}</div>
+                          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", marginTop: 2 }}>{zone.cidr}</div>
                         </div>
-                        <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: si.color, padding: "2px 8px", border: `1px solid ${si.color}40`, borderRadius: 3 }}>{si.label}</span>
+                        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: si.color, padding: "2px 8px", border: `1px solid ${si.color}40`, borderRadius: 3 }}>{si.label}</span>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                        <div style={{ flex: 1, height: 4, background: "rgba(26,58,80,0.5)", borderRadius: 2, overflow: "hidden" }}>
+                        <div style={{ flex: 1, height: 4, background: "rgba(37,99,235,0.06)", borderRadius: 2, overflow: "hidden" }}>
                           <div style={{ height: "100%", width: `${zone.score}%`, background: scoreColor(zone.score) }} />
                         </div>
-                        <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 12, color: scoreColor(zone.score), width: 36 }}>{zone.score}%</span>
+                        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: scoreColor(zone.score), width: 36 }}>{zone.score}%</span>
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                        <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94" }}>Systems</span>
-                        <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#C8E8F0" }}>{zone.systems}</span>
+                        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)" }}>Systems</span>
+                        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text)" }}>{zone.systems}</span>
                       </div>
                       <div>
-                        <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#3D7A94", marginBottom: 6 }}>CONTROLS</div>
+                        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", marginBottom: 6 }}>CONTROLS</div>
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                           {zone.controls.map((c) => (
-                            <span key={c} style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 8.5, color: "#3D7A94", padding: "2px 6px", border: "1px solid #1A3A50", borderRadius: 3 }}>{c}</span>
+                            <span key={c} style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 8.5, color: "var(--adv-text-muted)", padding: "2px 6px", border: "1px solid var(--adv-border)", borderRadius: 3 }}>{c}</span>
                           ))}
                         </div>
                       </div>
@@ -278,28 +278,28 @@ export default function SegmentationPage() {
               </div>
 
               {/* Zone-to-zone matrix */}
-              <div style={{ marginTop: 20, background: "#0D1B26", border: "1px solid #1A3A50", borderRadius: 6, overflow: "hidden" }}>
-                <div style={{ padding: "12px 16px", borderBottom: "1px solid #1A3A50", fontFamily: "'Share Tech Mono', monospace", fontSize: 12, color: "#C8E8F0", letterSpacing: 1 }}>
+              <div style={{ marginTop: 20, background: "linear-gradient(160deg, rgba(37,99,235,0.05) 0%, #FFFFFF 55%)", border: "1px solid var(--adv-border)", borderRadius: 6, overflow: "hidden" }}>
+                <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--adv-border)", fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: "var(--adv-text)", letterSpacing: 1 }}>
                   ZONE COMMUNICATION MATRIX
                 </div>
                 <div style={{ padding: 16, overflowX: "auto" }}>
                   <table style={{ borderCollapse: "collapse" }}>
                     <thead>
                       <tr>
-                        <th style={{ width: 80, fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#3D7A94" }}>FROM \ TO</th>
+                        <th style={{ width: 80, fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)" }}>FROM \ TO</th>
                         {zones.map((z) => (
-                          <th key={z.id} style={{ padding: "4px 12px", fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#3D7A94", textAlign: "center" }}>{z.name}</th>
+                          <th key={z.id} style={{ padding: "4px 12px", fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", textAlign: "center" }}>{z.name}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {zones.map((srcZone) => (
                         <tr key={srcZone.id}>
-                          <td style={{ padding: "8px 0", fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#3D7A94" }}>{srcZone.name}</td>
+                          <td style={{ padding: "8px 0", fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)" }}>{srcZone.name}</td>
                           {zones.map((dstZone) => {
                             if (srcZone.id === dstZone.id) return (
                               <td key={dstZone.id} style={{ padding: "8px 12px", textAlign: "center" }}>
-                                <span style={{ color: "#1A3A50", fontSize: 10 }}>—</span>
+                                <span style={{ color: "var(--adv-border)", fontSize: 10 }}>—</span>
                               </td>
                             );
                             const rule = aclRules.find(
@@ -312,12 +312,12 @@ export default function SegmentationPage() {
                               <td key={dstZone.id} style={{ padding: "8px 12px", textAlign: "center" }}>
                                 <span
                                   style={{
-                                    fontFamily: "'Share Tech Mono', monospace",
+                                    fontFamily: "'JetBrains Mono', monospace",
                                     fontSize: 9,
                                     padding: "2px 6px",
                                     borderRadius: 3,
-                                    background: !rule ? "rgba(61,122,148,0.15)" : isMismatch ? "#FF444425" : rule.action === "ALLOW" ? "#00D4FF15" : "#1A3A50",
-                                    color: !rule ? "#3D7A94" : isMismatch ? "#FF4444" : rule.action === "ALLOW" ? "#00D4FF" : "#3D7A94",
+                                    background: !rule ? "rgba(100,116,139,0.15)" : isMismatch ? "#FF444425" : rule.action === "ALLOW" ? "#2563EB15" : "#E2E8F0",
+                                    color: !rule ? "#64748B" : isMismatch ? "#FF4444" : rule.action === "ALLOW" ? "#2563EB" : "#64748B",
                                   }}
                                 >
                                   {!rule ? "–" : isMismatch ? "GAP" : rule.action}
@@ -336,8 +336,8 @@ export default function SegmentationPage() {
 
           {/* ── Tab 1: ACL Analysis ── */}
           {activeTab === 1 && (
-            <div style={{ background: "#0D1B26", border: "1px solid #1A3A50", borderRadius: 6, overflow: "hidden" }}>
-              <div style={{ padding: "12px 16px", borderBottom: "1px solid #1A3A50", fontFamily: "'Share Tech Mono', monospace", fontSize: 12, color: "#C8E8F0", letterSpacing: 1 }}>
+            <div style={{ background: "linear-gradient(160deg, rgba(37,99,235,0.05) 0%, #FFFFFF 55%)", border: "1px solid var(--adv-border)", borderRadius: 6, overflow: "hidden" }}>
+              <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--adv-border)", fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: "var(--adv-text)", letterSpacing: 1 }}>
                 FIREWALL ACL RULE AUDIT
               </div>
               <div style={{ overflowX: "auto" }}>
@@ -345,7 +345,7 @@ export default function SegmentationPage() {
                   <thead>
                     <tr>
                       {["RULE ID", "SRC ZONE", "DST ZONE", "PROTO", "PORT", "ACTUAL", "EXPECTED", "STATUS", "FINDING"].map((h) => (
-                        <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#3D7A94", borderBottom: "1px solid #1A3A50", whiteSpace: "nowrap", letterSpacing: 1 }}>{h}</th>
+                        <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", borderBottom: "1px solid var(--adv-border)", whiteSpace: "nowrap", letterSpacing: 1 }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -354,25 +354,25 @@ export default function SegmentationPage() {
                       const mismatch = rule.action !== rule.expectedAction;
                       return (
                         <tr key={rule.id} style={{ background: mismatch ? "rgba(255,68,68,0.02)" : "transparent" }}>
-                          <td style={{ padding: "10px 12px", fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#00D4FF", borderBottom: i < aclRules.length - 1 ? "1px solid rgba(26,58,80,0.25)" : "none" }}>{rule.id}</td>
-                          <td style={{ padding: "10px 12px", fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#C8E8F0", borderBottom: i < aclRules.length - 1 ? "1px solid rgba(26,58,80,0.25)" : "none" }}>{rule.sourceZone}</td>
-                          <td style={{ padding: "10px 12px", fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#C8E8F0", borderBottom: i < aclRules.length - 1 ? "1px solid rgba(26,58,80,0.25)" : "none" }}>{rule.destZone}</td>
-                          <td style={{ padding: "10px 12px", fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94", borderBottom: i < aclRules.length - 1 ? "1px solid rgba(26,58,80,0.25)" : "none" }}>{rule.protocol}</td>
-                          <td style={{ padding: "10px 12px", fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94", borderBottom: i < aclRules.length - 1 ? "1px solid rgba(26,58,80,0.25)" : "none" }}>{rule.port}</td>
-                          <td style={{ padding: "10px 12px", borderBottom: i < aclRules.length - 1 ? "1px solid rgba(26,58,80,0.25)" : "none" }}>
-                            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: rule.action === "ALLOW" ? "#00D4FF" : "#3D7A94", padding: "1px 5px", border: "1px solid currentColor", borderRadius: 3 }}>{rule.action}</span>
+                          <td style={{ padding: "10px 12px", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--adv-accent)", borderBottom: i < aclRules.length - 1 ? "1px solid rgba(37,99,235,0.06)" : "none" }}>{rule.id}</td>
+                          <td style={{ padding: "10px 12px", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text)", borderBottom: i < aclRules.length - 1 ? "1px solid rgba(37,99,235,0.06)" : "none" }}>{rule.sourceZone}</td>
+                          <td style={{ padding: "10px 12px", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text)", borderBottom: i < aclRules.length - 1 ? "1px solid rgba(37,99,235,0.06)" : "none" }}>{rule.destZone}</td>
+                          <td style={{ padding: "10px 12px", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", borderBottom: i < aclRules.length - 1 ? "1px solid rgba(37,99,235,0.06)" : "none" }}>{rule.protocol}</td>
+                          <td style={{ padding: "10px 12px", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", borderBottom: i < aclRules.length - 1 ? "1px solid rgba(37,99,235,0.06)" : "none" }}>{rule.port}</td>
+                          <td style={{ padding: "10px 12px", borderBottom: i < aclRules.length - 1 ? "1px solid rgba(37,99,235,0.06)" : "none" }}>
+                            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: rule.action === "ALLOW" ? "#2563EB" : "#64748B", padding: "1px 5px", border: "1px solid currentColor", borderRadius: 3 }}>{rule.action}</span>
                           </td>
-                          <td style={{ padding: "10px 12px", borderBottom: i < aclRules.length - 1 ? "1px solid rgba(26,58,80,0.25)" : "none" }}>
-                            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#3D7A94", padding: "1px 5px", border: "1px solid #1A3A50", borderRadius: 3 }}>{rule.expectedAction}</span>
+                          <td style={{ padding: "10px 12px", borderBottom: i < aclRules.length - 1 ? "1px solid rgba(37,99,235,0.06)" : "none" }}>
+                            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", padding: "1px 5px", border: "1px solid var(--adv-border)", borderRadius: 3 }}>{rule.expectedAction}</span>
                           </td>
-                          <td style={{ padding: "10px 12px", borderBottom: i < aclRules.length - 1 ? "1px solid rgba(26,58,80,0.25)" : "none" }}>
+                          <td style={{ padding: "10px 12px", borderBottom: i < aclRules.length - 1 ? "1px solid rgba(37,99,235,0.06)" : "none" }}>
                             {mismatch ? (
-                              <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: sevColor(rule.severity), padding: "1px 5px", background: `${sevColor(rule.severity)}20`, borderRadius: 3 }}>MISMATCH</span>
+                              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: sevColor(rule.severity), padding: "1px 5px", background: `${sevColor(rule.severity)}20`, borderRadius: 3 }}>MISMATCH</span>
                             ) : (
-                              <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#00FF88" }}>OK</span>
+                              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "#059669" }}>OK</span>
                             )}
                           </td>
-                          <td style={{ padding: "10px 12px", fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: mismatch ? sevColor(rule.severity) : "#3D7A94", borderBottom: i < aclRules.length - 1 ? "1px solid rgba(26,58,80,0.25)" : "none" }}>{rule.finding}</td>
+                          <td style={{ padding: "10px 12px", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: mismatch ? sevColor(rule.severity) : "#64748B", borderBottom: i < aclRules.length - 1 ? "1px solid rgba(37,99,235,0.06)" : "none" }}>{rule.finding}</td>
                         </tr>
                       );
                     })}
@@ -384,8 +384,8 @@ export default function SegmentationPage() {
 
           {/* ── Tab 2: Traffic Flows ── */}
           {activeTab === 2 && (
-            <div style={{ background: "#0D1B26", border: "1px solid #1A3A50", borderRadius: 6, overflow: "hidden" }}>
-              <div style={{ padding: "12px 16px", borderBottom: "1px solid #1A3A50", fontFamily: "'Share Tech Mono', monospace", fontSize: 12, color: "#C8E8F0", letterSpacing: 1 }}>
+            <div style={{ background: "linear-gradient(160deg, rgba(37,99,235,0.05) 0%, #FFFFFF 55%)", border: "1px solid var(--adv-border)", borderRadius: 6, overflow: "hidden" }}>
+              <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--adv-border)", fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: "var(--adv-text)", letterSpacing: 1 }}>
                 OBSERVED TRAFFIC FLOWS
               </div>
               <div style={{ overflowX: "auto" }}>
@@ -393,25 +393,25 @@ export default function SegmentationPage() {
                   <thead>
                     <tr>
                       {["SOURCE", "DESTINATION", "PROTOCOL", "OBSERVED", "ALLOWED", "ANOMALY"].map((h) => (
-                        <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#3D7A94", borderBottom: "1px solid #1A3A50", letterSpacing: 1 }}>{h}</th>
+                        <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", borderBottom: "1px solid var(--adv-border)", letterSpacing: 1 }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {trafficFlows.map((flow, i) => (
                       <tr key={i} style={{ background: flow.anomaly ? "rgba(255,153,0,0.02)" : "transparent" }}>
-                        <td style={{ padding: "10px 12px", fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#C8E8F0", borderBottom: i < trafficFlows.length - 1 ? "1px solid rgba(26,58,80,0.25)" : "none" }}>{flow.src}</td>
-                        <td style={{ padding: "10px 12px", fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#C8E8F0", borderBottom: i < trafficFlows.length - 1 ? "1px solid rgba(26,58,80,0.25)" : "none" }}>{flow.dst}</td>
-                        <td style={{ padding: "10px 12px", fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94", borderBottom: i < trafficFlows.length - 1 ? "1px solid rgba(26,58,80,0.25)" : "none" }}>{flow.protocol}</td>
-                        <td style={{ padding: "10px 12px", borderBottom: i < trafficFlows.length - 1 ? "1px solid rgba(26,58,80,0.25)" : "none" }}>
-                          <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: flow.observed ? "#00FF88" : "#3D7A94" }}>{flow.observed ? "YES" : "NO"}</span>
+                        <td style={{ padding: "10px 12px", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text)", borderBottom: i < trafficFlows.length - 1 ? "1px solid rgba(37,99,235,0.06)" : "none" }}>{flow.src}</td>
+                        <td style={{ padding: "10px 12px", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text)", borderBottom: i < trafficFlows.length - 1 ? "1px solid rgba(37,99,235,0.06)" : "none" }}>{flow.dst}</td>
+                        <td style={{ padding: "10px 12px", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", borderBottom: i < trafficFlows.length - 1 ? "1px solid rgba(37,99,235,0.06)" : "none" }}>{flow.protocol}</td>
+                        <td style={{ padding: "10px 12px", borderBottom: i < trafficFlows.length - 1 ? "1px solid rgba(37,99,235,0.06)" : "none" }}>
+                          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: flow.observed ? "#059669" : "#64748B" }}>{flow.observed ? "YES" : "NO"}</span>
                         </td>
-                        <td style={{ padding: "10px 12px", borderBottom: i < trafficFlows.length - 1 ? "1px solid rgba(26,58,80,0.25)" : "none" }}>
-                          <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: flow.allowed ? "#00D4FF" : flow.blocked ? "#00FF88" : "#FF4444" }}>
+                        <td style={{ padding: "10px 12px", borderBottom: i < trafficFlows.length - 1 ? "1px solid rgba(37,99,235,0.06)" : "none" }}>
+                          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: flow.allowed ? "#2563EB" : flow.blocked ? "#059669" : "#FF4444" }}>
                             {flow.blocked ? "BLOCKED" : flow.allowed ? "ALLOWED" : "BYPASS"}
                           </span>
                         </td>
-                        <td style={{ padding: "10px 12px", fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: flow.anomaly ? "#FF9900" : "#3D7A94", borderBottom: i < trafficFlows.length - 1 ? "1px solid rgba(26,58,80,0.25)" : "none" }}>
+                        <td style={{ padding: "10px 12px", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: flow.anomaly ? "#FF9900" : "#64748B", borderBottom: i < trafficFlows.length - 1 ? "1px solid rgba(37,99,235,0.06)" : "none" }}>
                           {flow.anomaly ?? "—"}
                         </td>
                       </tr>
@@ -429,8 +429,8 @@ export default function SegmentationPage() {
                 <div
                   key={f.id}
                   style={{
-                    background: "#0D1B26",
-                    border: `1px solid ${selectedFinding === f.id ? sevColor(f.severity) + "60" : "#1A3A50"}`,
+                    background: "var(--adv-panel)",
+                    border: `1px solid ${selectedFinding === f.id ? sevColor(f.severity) + "60" : "#E2E8F0"}`,
                     borderLeft: `3px solid ${sevColor(f.severity)}`,
                     borderRadius: 6,
                     overflow: "hidden",
@@ -441,26 +441,26 @@ export default function SegmentationPage() {
                 >
                   <div style={{ padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                      <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#00D4FF" }}>{f.id}</span>
-                      <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, fontWeight: 500, color: "#C8E8F0" }}>{f.title}</span>
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--adv-accent)" }}>{f.id}</span>
+                      <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 500, color: "var(--adv-text)" }}>{f.title}</span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#3D7A94" }}>{f.sourceZone} → {f.destZone}</span>
-                      <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: sevColor(f.severity), padding: "2px 6px", background: `${sevColor(f.severity)}20`, borderRadius: 3 }}>{f.severity}</span>
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)" }}>{f.sourceZone} → {f.destZone}</span>
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: sevColor(f.severity), padding: "2px 6px", background: `${sevColor(f.severity)}20`, borderRadius: 3 }}>{f.severity}</span>
                     </div>
                   </div>
                   {selectedFinding === f.id && (
-                    <div style={{ padding: "0 16px 16px 16px", borderTop: "1px solid #1A3A50" }}>
+                    <div style={{ padding: "0 16px 16px 16px", borderTop: "1px solid var(--adv-border)" }}>
                       <div style={{ paddingTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
                         <div>
-                          <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94", marginBottom: 4, letterSpacing: 1 }}>EVIDENCE</div>
-                          <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#C8E8F0", lineHeight: 1.6, background: "#050A0E", padding: "8px 12px", borderRadius: 4, border: "1px solid #1A3A50" }}>
+                          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", marginBottom: 4, letterSpacing: 1 }}>EVIDENCE</div>
+                          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--adv-text)", lineHeight: 1.6, background: "var(--adv-bg)", padding: "8px 12px", borderRadius: 4, border: "1px solid var(--adv-border)" }}>
                             {f.evidence}
                           </div>
                         </div>
                         <div>
-                          <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94", marginBottom: 4, letterSpacing: 1 }}>REMEDIATION</div>
-                          <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#00D4FF", lineHeight: 1.6, background: "#050A0E", padding: "8px 12px", borderRadius: 4, border: "1px solid #1A3A50" }}>
+                          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", marginBottom: 4, letterSpacing: 1 }}>REMEDIATION</div>
+                          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--adv-accent)", lineHeight: 1.6, background: "var(--adv-bg)", padding: "8px 12px", borderRadius: 4, border: "1px solid var(--adv-border)" }}>
                             {f.remediation}
                           </div>
                         </div>
@@ -474,12 +474,12 @@ export default function SegmentationPage() {
         </main>
 
         {/* Footer */}
-        <footer style={{ height: 32, borderTop: "1px solid #1A3A50", background: "#0D1B26", display: "flex", alignItems: "center", padding: "0 20px", gap: 16, flexShrink: 0 }}>
-          <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94" }}>ZONES: <span style={{ color: "#C8E8F0" }}>{zones.length}</span></span>
-          <span style={{ color: "#1A3A50" }}>|</span>
-          <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94" }}>ACL GAPS: <span style={{ color: "#FF4444" }}>{aclRules.filter((r) => r.action !== r.expectedAction).length}</span></span>
-          <span style={{ color: "#1A3A50" }}>|</span>
-          <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94" }}>ANOMALOUS FLOWS: <span style={{ color: "#FF9900" }}>{trafficFlows.filter((f) => f.anomaly).length}</span></span>
+        <footer style={{ height: 32, borderTop: "1px solid var(--adv-border)", background: "var(--adv-panel)", display: "flex", alignItems: "center", padding: "0 20px", gap: 16, flexShrink: 0 }}>
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)" }}>ZONES: <span style={{ color: "var(--adv-text)" }}>{zones.length}</span></span>
+          <span style={{ color: "var(--adv-border)" }}>|</span>
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)" }}>ACL GAPS: <span style={{ color: "#FF4444" }}>{aclRules.filter((r) => r.action !== r.expectedAction).length}</span></span>
+          <span style={{ color: "var(--adv-border)" }}>|</span>
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)" }}>ANOMALOUS FLOWS: <span style={{ color: "#FF9900" }}>{trafficFlows.filter((f) => f.anomaly).length}</span></span>
         </footer>
       </div>
     </div>

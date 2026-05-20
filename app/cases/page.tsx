@@ -32,9 +32,9 @@ const SEV_COLOR: Record<Severity, string> = {
 const STATUS_COLUMNS: { key: Status; label: string; color: string }[] = [
   { key: "OPEN",           label: "OPEN",           color: "#FF1744" },
   { key: "IN_REVIEW",      label: "IN REVIEW",      color: "#FF9900" },
-  { key: "IN_REMEDIATION", label: "IN REMEDIATION", color: "#00D4FF" },
-  { key: "VERIFIED",       label: "VERIFIED",        color: "#00FF88" },
-  { key: "CLOSED",         label: "CLOSED",          color: "#3D7A94" },
+  { key: "IN_REMEDIATION", label: "IN REMEDIATION", color: "var(--adv-accent)" },
+  { key: "VERIFIED",       label: "VERIFIED",        color: "#059669" },
+  { key: "CLOSED",         label: "CLOSED",          color: "var(--adv-text-muted)" },
 ];
 
 const STATUS_NEXT: Partial<Record<Status, Status>> = {
@@ -84,14 +84,14 @@ function fmtRelative(iso: string) {
 function Initials({ name }: { name: string }) {
   const parts = name.split(" ");
   const ini = parts.length > 1 ? parts[0][0] + parts[parts.length - 1][0] : name.slice(0, 2);
-  const colors = ["#00D4FF", "#00FF88", "#FF9900", "#FF6D00", "#9C27B0", "#2196F3"];
+  const colors = ["#2563EB", "#059669", "#FF9900", "#FF6D00", "#9C27B0", "#2196F3"];
   const color = colors[(name.charCodeAt(0) + name.charCodeAt(1)) % colors.length];
   return (
     <div style={{
       width: 24, height: 24, borderRadius: "50%",
       background: `${color}22`, border: `1px solid ${color}55`,
       display: "flex", alignItems: "center", justifyContent: "center",
-      fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color, flexShrink: 0,
+      fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color, flexShrink: 0,
     }}>
       {ini.toUpperCase()}
     </div>
@@ -104,11 +104,11 @@ function SlaBar({ c }: { c: Case }) {
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-        <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#3D7A94" }}>SLA</span>
+        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)" }}>SLA</span>
         <span
           className={breached ? "sla-pulse" : ""}
           style={{
-            fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color,
+            fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color,
             padding: "1px 5px", borderRadius: 4,
             background: `${color}15`,
             border: `1px solid ${color}30`,
@@ -117,7 +117,7 @@ function SlaBar({ c }: { c: Case }) {
           {breached ? "BREACHED" : `${fmtHours(hoursLeft)} left`}
         </span>
       </div>
-      <div style={{ height: 3, background: "#1A3A50", borderRadius: 2, overflow: "hidden" }}>
+      <div style={{ height: 3, background: "#E2E8F0", borderRadius: 2, overflow: "hidden" }}>
         <div className="progress-bar-fill" style={{ height: "100%", width: `${pctLeft}%`, background: color, borderRadius: 2 }} />
       </div>
     </div>
@@ -137,8 +137,8 @@ function CaseCard({ c, onClick, onMoveNext, onMovePrev }: {
       className="card-hover stagger-item"
       onClick={onClick}
       style={{
-        background: "#0A1520",
-        border: `1px solid #1A3A50`,
+        background: "var(--adv-bg)",
+        border: `1px solid #E2E8F0`,
         borderLeft: `3px solid ${sev}`,
         borderRadius: 6,
         padding: "12px",
@@ -150,32 +150,32 @@ function CaseCard({ c, onClick, onMoveNext, onMovePrev }: {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           <span style={{
-            fontFamily: "'Share Tech Mono', monospace", fontSize: 9,
+            fontFamily: "'JetBrains Mono', monospace", fontSize: 9,
             color: sev, background: `${sev}15`, border: `1px solid ${sev}30`,
             borderRadius: 3, padding: "1px 5px",
           }}>
             {c.severity}
           </span>
           <span style={{
-            fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#3D7A94",
-            background: "rgba(61,122,148,0.1)", border: "1px solid #1A3A50",
+            fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)",
+            background: "rgba(100,116,139,0.1)", border: "1px solid var(--adv-border)",
             borderRadius: 3, padding: "1px 5px",
           }}>
             {c.id}
           </span>
         </div>
         {c.comments.length > 0 && (
-          <div style={{ display: "flex", alignItems: "center", gap: 3, color: "#3D7A94" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 3, color: "var(--adv-text-muted)" }}>
             <MessageSquare size={10} />
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9 }}>{c.comments.length}</span>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9 }}>{c.comments.length}</span>
           </div>
         )}
       </div>
 
       {/* Title */}
       <div style={{
-        fontFamily: "'Rajdhani', sans-serif", fontSize: 13, fontWeight: 600,
-        color: "#C8E8F0", lineHeight: 1.3, marginBottom: 8,
+        fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600,
+        color: "var(--adv-text)", lineHeight: 1.3, marginBottom: 8,
       }}>
         {c.title}
       </div>
@@ -183,7 +183,7 @@ function CaseCard({ c, onClick, onMoveNext, onMovePrev }: {
       {/* Meta */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
         <Initials name={c.assignee} />
-        <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#3D7A94" }}>
+        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)" }}>
           CVSS {c.cvss}
         </span>
       </div>
@@ -195,17 +195,17 @@ function CaseCard({ c, onClick, onMoveNext, onMovePrev }: {
       {(c.integrations.jiraKey || c.integrations.slackNotified || c.integrations.emailSent) && (
         <div style={{ display: "flex", gap: 4, marginTop: 8, flexWrap: "wrap" }}>
           {c.integrations.jiraKey && (
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 8, color: "#2196F3", background: "rgba(33,150,243,0.1)", border: "1px solid rgba(33,150,243,0.2)", borderRadius: 3, padding: "1px 4px" }}>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 8, color: "#2196F3", background: "rgba(33,150,243,0.1)", border: "1px solid rgba(33,150,243,0.2)", borderRadius: 3, padding: "1px 4px" }}>
               JIRA {c.integrations.jiraKey}
             </span>
           )}
           {c.integrations.slackNotified && (
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 8, color: "#9C27B0", background: "rgba(156,39,176,0.1)", border: "1px solid rgba(156,39,176,0.2)", borderRadius: 3, padding: "1px 4px" }}>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 8, color: "#9C27B0", background: "rgba(156,39,176,0.1)", border: "1px solid rgba(156,39,176,0.2)", borderRadius: 3, padding: "1px 4px" }}>
               SLACK
             </span>
           )}
           {c.integrations.emailSent && (
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 8, color: "#00FF88", background: "rgba(0,255,136,0.08)", border: "1px solid rgba(0,255,136,0.2)", borderRadius: 3, padding: "1px 4px" }}>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 8, color: "#059669", background: "rgba(5,150,105,0.08)", border: "1px solid rgba(5,150,105,0.2)", borderRadius: 3, padding: "1px 4px" }}>
               EMAIL
             </span>
           )}
@@ -218,8 +218,8 @@ function CaseCard({ c, onClick, onMoveNext, onMovePrev }: {
           <button
             onClick={onMovePrev}
             style={{
-              flex: 1, padding: "4px 0", background: "rgba(61,122,148,0.1)", border: "1px solid #1A3A50",
-              borderRadius: 4, color: "#3D7A94", fontFamily: "'Share Tech Mono', monospace", fontSize: 9,
+              flex: 1, padding: "4px 0", background: "rgba(100,116,139,0.1)", border: "1px solid var(--adv-border)",
+              borderRadius: 4, color: "var(--adv-text-muted)", fontFamily: "'JetBrains Mono', monospace", fontSize: 9,
               cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 3,
             }}
           >
@@ -230,8 +230,8 @@ function CaseCard({ c, onClick, onMoveNext, onMovePrev }: {
           <button
             onClick={onMoveNext}
             style={{
-              flex: 1, padding: "4px 0", background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.2)",
-              borderRadius: 4, color: "#00D4FF", fontFamily: "'Share Tech Mono', monospace", fontSize: 9,
+              flex: 1, padding: "4px 0", background: "rgba(37,99,235,0.08)", border: "1px solid rgba(37,99,235,0.2)",
+              borderRadius: 4, color: "var(--adv-accent)", fontFamily: "'JetBrains Mono', monospace", fontSize: 9,
               cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 3,
             }}
           >
@@ -314,33 +314,33 @@ function CaseModal({ c, onClose, onUpdate }: { c: Case; onClose: () => void; onU
         className="animate-scale-in"
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: "#0D1B26", border: "1px solid #1A3A50",
+          background: "linear-gradient(160deg, rgba(37,99,235,0.05) 0%, #FFFFFF 55%)", border: "1px solid var(--adv-border)",
           borderRadius: 8, width: "min(780px, 95vw)", maxHeight: "90vh",
           display: "flex", flexDirection: "column", overflow: "hidden",
         }}
       >
         {/* Modal Header */}
         <div style={{
-          padding: "16px 20px", borderBottom: "1px solid #1A3A50",
+          padding: "16px 20px", borderBottom: "1px solid var(--adv-border)",
           display: "flex", justifyContent: "space-between", alignItems: "flex-start",
         }}>
           <div>
             <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
               <span style={{
-                fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94",
-                background: "rgba(61,122,148,0.1)", border: "1px solid #1A3A50", borderRadius: 3, padding: "2px 6px",
+                fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)",
+                background: "rgba(100,116,139,0.1)", border: "1px solid var(--adv-border)", borderRadius: 3, padding: "2px 6px",
               }}>
                 {c.id}
               </span>
               <span style={{
-                fontFamily: "'Share Tech Mono', monospace", fontSize: 10,
+                fontFamily: "'JetBrains Mono', monospace", fontSize: 10,
                 color: SEV_COLOR[c.severity], background: `${SEV_COLOR[c.severity]}15`,
                 border: `1px solid ${SEV_COLOR[c.severity]}30`, borderRadius: 3, padding: "2px 6px",
               }}>
                 {c.severity}
               </span>
               <span style={{
-                fontFamily: "'Share Tech Mono', monospace", fontSize: 10,
+                fontFamily: "'JetBrains Mono', monospace", fontSize: 10,
                 color: sla.color, background: `${sla.color}10`,
                 border: `1px solid ${sla.color}30`, borderRadius: 3, padding: "2px 6px",
               }}
@@ -349,29 +349,29 @@ function CaseModal({ c, onClose, onUpdate }: { c: Case; onClose: () => void; onU
                 {sla.breached ? "⚠ SLA BREACHED" : `SLA: ${fmtHours(sla.hoursLeft)} left`}
               </span>
             </div>
-            <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 17, fontWeight: 700, color: "#C8E8F0" }}>
+            <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 17, fontWeight: 700, color: "var(--adv-text)" }}>
               {c.title}
             </div>
-            <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94", marginTop: 4 }}>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", marginTop: 4 }}>
               {c.findingId} · {c.category} · Assigned to {c.assignee}
             </div>
           </div>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#3D7A94", padding: 4 }}>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--adv-text-muted)", padding: 4 }}>
             <X size={18} />
           </button>
         </div>
 
         {/* Tabs */}
-        <div style={{ display: "flex", borderBottom: "1px solid #1A3A50", flexShrink: 0 }}>
+        <div style={{ display: "flex", borderBottom: "1px solid var(--adv-border)", flexShrink: 0 }}>
           {tabs.map((t) => (
             <button
               key={t.key}
               onClick={() => setActiveTab(t.key)}
               style={{
-                padding: "10px 16px", background: activeTab === t.key ? "rgba(0,212,255,0.04)" : "transparent",
-                border: "none", borderBottom: activeTab === t.key ? "2px solid #00D4FF" : "2px solid transparent",
-                color: activeTab === t.key ? "#C8E8F0" : "#3D7A94",
-                fontFamily: "'Share Tech Mono', monospace", fontSize: 11, letterSpacing: 1,
+                padding: "10px 16px", background: activeTab === t.key ? "rgba(37,99,235,0.04)" : "transparent",
+                border: "none", borderBottom: activeTab === t.key ? "2px solid #2563EB" : "2px solid transparent",
+                color: activeTab === t.key ? "#0F172A" : "#64748B",
+                fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: 1,
                 cursor: "pointer", transition: "color 0.15s",
               }}
             >
@@ -397,8 +397,8 @@ function CaseModal({ c, onClose, onUpdate }: { c: Case; onClose: () => void; onU
                   { label: "Due Date",      value: new Date(c.dueDate).toLocaleString() },
                 ].map((row) => (
                   <div key={row.label}>
-                    <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#3D7A94", marginBottom: 3 }}>{row.label}</div>
-                    <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: "#C8E8F0" }}>{row.value}</div>
+                    <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", marginBottom: 3 }}>{row.label}</div>
+                    <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, color: "var(--adv-text)" }}>{row.value}</div>
                   </div>
                 ))}
               </div>
@@ -406,33 +406,33 @@ function CaseModal({ c, onClose, onUpdate }: { c: Case; onClose: () => void; onU
               {/* Right: SLA + MITRE + comment thread */}
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {/* SLA gauge */}
-                <div style={{ background: "#050A0E", border: "1px solid #1A3A50", borderRadius: 6, padding: 12 }}>
-                  <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94", marginBottom: 8 }}>SLA PROGRESS</div>
+                <div style={{ background: "var(--adv-bg)", border: "1px solid var(--adv-border)", borderRadius: 6, padding: 12 }}>
+                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", marginBottom: 8 }}>SLA PROGRESS</div>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                    <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: sla.color }}>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: sla.color }}>
                       {sla.breached ? "BREACHED" : `${fmtHours(sla.hoursLeft)} remaining`}
                     </span>
-                    <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#3D7A94" }}>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--adv-text-muted)" }}>
                       {Math.round(sla.pctLeft)}% left
                     </span>
                   </div>
-                  <div style={{ height: 8, background: "#1A3A50", borderRadius: 4, overflow: "hidden" }}>
+                  <div style={{ height: 8, background: "#E2E8F0", borderRadius: 4, overflow: "hidden" }}>
                     <div className="progress-bar-fill" style={{ height: "100%", width: `${sla.pctLeft}%`, background: sla.color, borderRadius: 4 }} />
                   </div>
-                  <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#3D7A94", marginTop: 6 }}>
+                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", marginTop: 6 }}>
                     Window: {c.slaHours}h · Policy: {c.severity}
                   </div>
                 </div>
 
                 {/* MITRE tags */}
                 {c.mitre.length > 0 && (
-                  <div style={{ background: "#050A0E", border: "1px solid #1A3A50", borderRadius: 6, padding: 12 }}>
-                    <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94", marginBottom: 8 }}>MITRE ATT&CK</div>
+                  <div style={{ background: "var(--adv-bg)", border: "1px solid var(--adv-border)", borderRadius: 6, padding: 12 }}>
+                    <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", marginBottom: 8 }}>MITRE ATT&CK</div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                       {c.mitre.map((m) => (
                         <div key={m.id} style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                          <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#00D4FF", flexShrink: 0 }}>{m.id}</span>
-                          <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: "#3D7A94" }}>{m.name}</span>
+                          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-accent)", flexShrink: 0 }}>{m.id}</span>
+                          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: "var(--adv-text-muted)" }}>{m.name}</span>
                         </div>
                       ))}
                     </div>
@@ -450,12 +450,12 @@ function CaseModal({ c, onClose, onUpdate }: { c: Case; onClose: () => void; onU
                 {[...c.activities].reverse().map((act, i) => (
                   <div key={act.id} className="stagger-item" style={{ display: "flex", gap: 12, paddingBottom: 16, position: "relative" }}>
                     {i < c.activities.length - 1 && (
-                      <div style={{ position: "absolute", left: 7, top: 18, bottom: 0, width: 1, background: "#1A3A50" }} />
+                      <div style={{ position: "absolute", left: 7, top: 18, bottom: 0, width: 1, background: "#E2E8F0" }} />
                     )}
-                    <div style={{ width: 16, height: 16, borderRadius: "50%", background: "#1A3A50", border: "2px solid #3D7A94", flexShrink: 0, marginTop: 2 }} />
+                    <div style={{ width: 16, height: 16, borderRadius: "50%", background: "#E2E8F0", border: "2px solid #64748B", flexShrink: 0, marginTop: 2 }} />
                     <div>
-                      <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: "#C8E8F0" }}>{act.action}</div>
-                      <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94", marginTop: 2 }}>
+                      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: "var(--adv-text)" }}>{act.action}</div>
+                      <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", marginTop: 2 }}>
                         {act.actor} · {fmtRelative(act.timestamp)}
                       </div>
                     </div>
@@ -464,19 +464,19 @@ function CaseModal({ c, onClose, onUpdate }: { c: Case; onClose: () => void; onU
               </div>
 
               {/* Comment thread */}
-              <div style={{ borderTop: "1px solid #1A3A50", paddingTop: 16 }}>
-                <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#3D7A94", marginBottom: 12 }}>COMMENTS</div>
+              <div style={{ borderTop: "1px solid var(--adv-border)", paddingTop: 16 }}>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--adv-text-muted)", marginBottom: 12 }}>COMMENTS</div>
                 {c.comments.length === 0 && (
-                  <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: "#3D7A94", marginBottom: 12 }}>No comments yet.</div>
+                  <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: "var(--adv-text-muted)", marginBottom: 12 }}>No comments yet.</div>
                 )}
                 {c.comments.map((cm) => (
-                  <div key={cm.id} style={{ background: "#050A0E", border: "1px solid #1A3A50", borderRadius: 6, padding: "10px 12px", marginBottom: 8 }}>
+                  <div key={cm.id} style={{ background: "var(--adv-bg)", border: "1px solid var(--adv-border)", borderRadius: 6, padding: "10px 12px", marginBottom: 8 }}>
                     <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>
                       <Initials name={cm.author} />
-                      <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#C8E8F0" }}>{cm.author}</span>
-                      <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94" }}>{fmtRelative(cm.timestamp)}</span>
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--adv-text)" }}>{cm.author}</span>
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)" }}>{fmtRelative(cm.timestamp)}</span>
                     </div>
-                    <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: "#C8E8F0", lineHeight: 1.5 }}>{cm.content}</div>
+                    <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, color: "var(--adv-text)", lineHeight: 1.5 }}>{cm.content}</div>
                   </div>
                 ))}
 
@@ -488,8 +488,8 @@ function CaseModal({ c, onClose, onUpdate }: { c: Case; onClose: () => void; onU
                     placeholder="Add a comment..."
                     rows={2}
                     style={{
-                      flex: 1, background: "#050A0E", border: "1px solid #1A3A50", borderRadius: 6,
-                      padding: "8px 12px", color: "#C8E8F0", fontFamily: "'Rajdhani', sans-serif",
+                      flex: 1, background: "var(--adv-bg)", border: "1px solid var(--adv-border)", borderRadius: 6,
+                      padding: "8px 12px", color: "var(--adv-text)", fontFamily: "'Inter', sans-serif",
                       fontSize: 13, resize: "none", outline: "none",
                     }}
                   />
@@ -498,11 +498,11 @@ function CaseModal({ c, onClose, onUpdate }: { c: Case; onClose: () => void; onU
                     disabled={!comment.trim() || sending === "comment"}
                     style={{
                       padding: "0 14px", borderRadius: 6, border: "none",
-                      background: comment.trim() ? "#00D4FF" : "rgba(0,212,255,0.1)",
-                      color: comment.trim() ? "#050A0E" : "#3D7A94",
+                      background: comment.trim() ? "#2563EB" : "rgba(37,99,235,0.1)",
+                      color: comment.trim() ? "#F8FAFC" : "#64748B",
                       cursor: comment.trim() ? "pointer" : "not-allowed",
                       display: "flex", alignItems: "center", gap: 4,
-                      fontFamily: "'Share Tech Mono', monospace", fontSize: 11,
+                      fontFamily: "'JetBrains Mono', monospace", fontSize: 11,
                     }}
                   >
                     <Send size={13} />
@@ -522,7 +522,7 @@ function CaseModal({ c, onClose, onUpdate }: { c: Case; onClose: () => void; onU
                   active: c.integrations.emailSent,
                   activeLabel: c.integrations.emailSent ? `Sent ${c.integrations.emailSentAt ? fmtRelative(c.integrations.emailSentAt) : ""}` : "Not sent",
                   buttonLabel: c.integrations.emailSent ? "Resend Email" : "Send Email",
-                  color: "#00FF88",
+                  color: "#059669",
                 },
                 {
                   key: "slack", icon: MessageCircle, label: "MessageCircle Notification",
@@ -543,19 +543,19 @@ function CaseModal({ c, onClose, onUpdate }: { c: Case; onClose: () => void; onU
               ].map((intg) => {
                 const Icon = intg.icon;
                 return (
-                  <div key={intg.key} style={{ background: "#050A0E", border: "1px solid #1A3A50", borderRadius: 6, padding: "14px 16px" }}>
+                  <div key={intg.key} style={{ background: "var(--adv-bg)", border: "1px solid var(--adv-border)", borderRadius: 6, padding: "14px 16px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                         <div style={{ width: 32, height: 32, borderRadius: 6, background: `${intg.color}15`, border: `1px solid ${intg.color}30`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                           <Icon size={15} color={intg.color} />
                         </div>
                         <div>
-                          <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, fontWeight: 600, color: "#C8E8F0" }}>{intg.label}</div>
-                          <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: "#3D7A94" }}>{intg.desc}</div>
+                          <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 600, color: "var(--adv-text)" }}>{intg.label}</div>
+                          <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: "var(--adv-text-muted)" }}>{intg.desc}</div>
                         </div>
                       </div>
                       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: intg.active ? "#00FF88" : "#3D7A94" }}>
+                        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: intg.active ? "#059669" : "#64748B" }}>
                           {intg.activeLabel}
                         </span>
                         <button
@@ -564,7 +564,7 @@ function CaseModal({ c, onClose, onUpdate }: { c: Case; onClose: () => void; onU
                           style={{
                             padding: "6px 14px", borderRadius: 4, border: `1px solid ${intg.color}50`,
                             background: `${intg.color}10`, color: intg.color,
-                            fontFamily: "'Share Tech Mono', monospace", fontSize: 10,
+                            fontFamily: "'JetBrains Mono', monospace", fontSize: 10,
                             cursor: "pointer", opacity: sending === intg.key ? 0.6 : 1,
                           }}
                         >
@@ -586,7 +586,7 @@ function CaseModal({ c, onClose, onUpdate }: { c: Case; onClose: () => void; onU
                     display: "flex", alignItems: "center", gap: 8, padding: "10px 14px",
                     background: "rgba(33,150,243,0.08)", border: "1px solid rgba(33,150,243,0.2)",
                     borderRadius: 6, color: "#2196F3", textDecoration: "none",
-                    fontFamily: "'Share Tech Mono', monospace", fontSize: 11,
+                    fontFamily: "'JetBrains Mono', monospace", fontSize: 11,
                   }}
                 >
                   <ExternalLink size={13} />
@@ -682,14 +682,14 @@ export default function CasesPage() {
         {/* Column header */}
         <div style={{
           padding: "10px 12px", marginBottom: 8,
-          background: "#0A1520", border: "1px solid #1A3A50", borderTop: `3px solid ${col.color}`,
+          background: "var(--adv-bg)", border: "1px solid var(--adv-border)", borderTop: `3px solid ${col.color}`,
           borderRadius: 6, display: "flex", justifyContent: "space-between", alignItems: "center",
         }}>
-          <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#C8E8F0", letterSpacing: 1 }}>
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--adv-text)", letterSpacing: 1 }}>
             {col.label}
           </span>
           <span style={{
-            fontFamily: "'Share Tech Mono', monospace", fontSize: 10,
+            fontFamily: "'JetBrains Mono', monospace", fontSize: 10,
             color: col.color, background: `${col.color}15`, border: `1px solid ${col.color}30`,
             borderRadius: 10, padding: "1px 7px",
           }}>
@@ -705,9 +705,9 @@ export default function CasesPage() {
             ))
           ) : colCases.length === 0 ? (
             <div style={{
-              border: "1px dashed #1A3A50", borderRadius: 6, padding: "20px",
-              textAlign: "center", fontFamily: "'Share Tech Mono', monospace",
-              fontSize: 10, color: "#3D7A94",
+              border: "1px dashed #E2E8F0", borderRadius: 6, padding: "20px",
+              textAlign: "center", fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 10, color: "var(--adv-text-muted)",
             }}>
               No cases
             </div>
@@ -734,16 +734,16 @@ export default function CasesPage() {
       noPadding
       statusItems={[
         { label: "OPEN", value: String(stats.open), color: "#FF1744" },
-        { label: "BREACHED", value: String(stats.breached), color: stats.breached > 0 ? "#FF1744" : "#3D7A94" },
+        { label: "BREACHED", value: String(stats.breached), color: stats.breached > 0 ? "#FF1744" : "#64748B" },
         { label: "CRITICAL", value: String(stats.critical), color: "#FF6D00" },
       ]}
       headerActions={
         <button
           onClick={load}
           style={{
-            background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.2)",
-            borderRadius: 4, padding: "5px 12px", color: "#00D4FF",
-            fontFamily: "'Share Tech Mono', monospace", fontSize: 10, cursor: "pointer",
+            background: "rgba(37,99,235,0.08)", border: "1px solid rgba(37,99,235,0.2)",
+            borderRadius: 4, padding: "5px 12px", color: "var(--adv-accent)",
+            fontFamily: "'JetBrains Mono', monospace", fontSize: 10, cursor: "pointer",
             display: "flex", alignItems: "center", gap: 5,
           }}
         >
@@ -755,20 +755,20 @@ export default function CasesPage() {
         {/* ── Metric Bar ── */}
         <div style={{
           display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 1,
-          borderBottom: "1px solid #1A3A50", flexShrink: 0, background: "#1A3A50",
+          borderBottom: "1px solid var(--adv-border)", flexShrink: 0, background: "#E2E8F0",
         }}>
           {[
-            { label: "TOTAL CASES",  value: stats.total,       color: "#C8E8F0" },
+            { label: "TOTAL CASES",  value: stats.total,       color: "var(--adv-text)" },
             { label: "OPEN",         value: stats.open,        color: "#FF1744" },
-            { label: "SLA BREACHED", value: stats.breached,    color: stats.breached > 0 ? "#FF1744" : "#3D7A94" },
+            { label: "SLA BREACHED", value: stats.breached,    color: stats.breached > 0 ? "#FF1744" : "#64748B" },
             { label: "CRITICAL OPEN",value: stats.critical,    color: "#FF6D00" },
-            { label: "CLOSED TODAY", value: stats.closedToday, color: "#00FF88" },
+            { label: "CLOSED TODAY", value: stats.closedToday, color: "#059669" },
           ].map((m) => (
-            <div key={m.label} style={{ background: "#0D1B26", padding: "12px 16px", textAlign: "center" }}>
-              <div className="animate-fade-up" style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 24, fontWeight: 700, color: m.color, lineHeight: 1 }}>
+            <div key={m.label} style={{ background: "var(--adv-panel)", padding: "12px 16px", textAlign: "center" }}>
+              <div className="animate-fade-up" style={{ fontFamily: "'Inter', sans-serif", fontSize: 24, fontWeight: 700, color: m.color, lineHeight: 1 }}>
                 {m.value}
               </div>
-              <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#3D7A94", marginTop: 4 }}>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", marginTop: 4 }}>
                 {m.label}
               </div>
             </div>
@@ -777,19 +777,19 @@ export default function CasesPage() {
 
         {/* ── Filter Bar ── */}
         <div style={{
-          padding: "10px 20px", borderBottom: "1px solid #1A3A50",
+          padding: "10px 20px", borderBottom: "1px solid var(--adv-border)",
           display: "flex", gap: 10, alignItems: "center", flexShrink: 0,
-          background: "#050A0E", flexWrap: "wrap",
+          background: "var(--adv-bg)", flexWrap: "wrap",
         }}>
-          <Filter size={13} color="#3D7A94" />
+          <Filter size={13} color="#64748B" />
           {/* Search */}
-          <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#0D1B26", border: "1px solid #1A3A50", borderRadius: 4, padding: "4px 10px", minWidth: 180 }}>
-            <Search size={11} color="#3D7A94" />
+          <div style={{ display: "flex", alignItems: "center", gap: 6, background: "linear-gradient(160deg, rgba(37,99,235,0.05) 0%, #FFFFFF 55%)", border: "1px solid var(--adv-border)", borderRadius: 4, padding: "4px 10px", minWidth: 180 }}>
+            <Search size={11} color="#64748B" />
             <input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search cases..."
-              style={{ background: "none", border: "none", outline: "none", color: "#C8E8F0", fontFamily: "'Share Tech Mono', monospace", fontSize: 11, width: "100%" }}
+              style={{ background: "none", border: "none", outline: "none", color: "var(--adv-text)", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, width: "100%" }}
             />
           </div>
           {/* Severity filter */}
@@ -799,10 +799,10 @@ export default function CasesPage() {
               onClick={() => setFilterSeverity(s)}
               style={{
                 padding: "4px 10px", borderRadius: 4, cursor: "pointer",
-                fontFamily: "'Share Tech Mono', monospace", fontSize: 10,
-                border: `1px solid ${filterSeverity === s ? (s === "ALL" ? "#00D4FF" : SEV_COLOR[s as Severity]) : "#1A3A50"}`,
-                background: filterSeverity === s ? (s === "ALL" ? "rgba(0,212,255,0.1)" : `${SEV_COLOR[s as Severity]}15`) : "transparent",
-                color: filterSeverity === s ? (s === "ALL" ? "#00D4FF" : SEV_COLOR[s as Severity]) : "#3D7A94",
+                fontFamily: "'JetBrains Mono', monospace", fontSize: 10,
+                border: `1px solid ${filterSeverity === s ? (s === "ALL" ? "#2563EB" : SEV_COLOR[s as Severity]) : "#E2E8F0"}`,
+                background: filterSeverity === s ? (s === "ALL" ? "rgba(37,99,235,0.1)" : `${SEV_COLOR[s as Severity]}15`) : "transparent",
+                color: filterSeverity === s ? (s === "ALL" ? "#2563EB" : SEV_COLOR[s as Severity]) : "#64748B",
               }}
             >
               {s}
@@ -813,8 +813,8 @@ export default function CasesPage() {
             value={filterAssignee}
             onChange={(e) => setFilterAssignee(e.target.value)}
             style={{
-              background: "#0D1B26", border: "1px solid #1A3A50", borderRadius: 4,
-              color: "#3D7A94", fontFamily: "'Share Tech Mono', monospace", fontSize: 10,
+              background: "linear-gradient(160deg, rgba(37,99,235,0.05) 0%, #FFFFFF 55%)", border: "1px solid var(--adv-border)", borderRadius: 4,
+              color: "var(--adv-text-muted)", fontFamily: "'JetBrains Mono', monospace", fontSize: 10,
               padding: "4px 8px", outline: "none", cursor: "pointer",
             }}
           >

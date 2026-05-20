@@ -310,7 +310,7 @@ export function getSlaInfo(f: Finding): {
   label: string;
 } {
   const slaH = SLA_HOURS[f.severity];
-  if (!slaH) return { hoursLeft: 0, pctLeft: 100, breached: false, color: "#3D7A94", label: "N/A" };
+  if (!slaH) return { hoursLeft: 0, pctLeft: 100, breached: false, color: "#A8614F", label: "N/A" };
 
   const due = new Date(f.slaDeadline).getTime();
   const created = new Date(f.discoveredAt).getTime();

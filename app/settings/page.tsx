@@ -55,12 +55,12 @@ function SectionHeader({ icon, label, badge }: { icon: React.ElementType; label:
   const Icon = icon;
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-      <div style={{ width: 32, height: 32, borderRadius: 6, background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <Icon size={16} color="#00D4FF" />
+      <div style={{ width: 32, height: 32, borderRadius: 6, background: "rgba(37,99,235,0.08)", border: "1px solid rgba(37,99,235,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Icon size={16} color="#2563EB" />
       </div>
-      <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 13, color: "#C8E8F0", letterSpacing: 1 }}>{label}</span>
+      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: "var(--adv-text)", letterSpacing: 1 }}>{label}</span>
       {badge && (
-        <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#3D7A94", background: "rgba(61,122,148,0.1)", border: "1px solid #1A3A50", borderRadius: 10, padding: "2px 8px" }}>
+        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", background: "rgba(100,116,139,0.1)", border: "1px solid var(--adv-border)", borderRadius: 10, padding: "2px 8px" }}>
           {badge}
         </span>
       )}
@@ -77,7 +77,7 @@ function IntegrationFields({ fields }: { fields: EnvSetting[] }) {
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
       {fields.map((f) => (
         <div key={f.key}>
-          <label style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94", display: "block", marginBottom: 5 }}>
+          <label style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", display: "block", marginBottom: 5 }}>
             {f.label}
           </label>
           <div style={{ position: "relative" }}>
@@ -88,22 +88,22 @@ function IntegrationFields({ fields }: { fields: EnvSetting[] }) {
               onChange={(e) => setVals((p) => ({ ...p, [f.key]: e.target.value }))}
               style={{
                 width: "100%", boxSizing: "border-box",
-                background: "#050A0E", border: "1px solid #1A3A50", borderRadius: 5,
+                background: "var(--adv-bg)", border: "1px solid var(--adv-border)", borderRadius: 5,
                 padding: `8px ${f.type === "password" ? "36px" : "12px"} 8px 12px`,
-                color: "#C8E8F0", fontFamily: "'Share Tech Mono', monospace", fontSize: 11,
+                color: "var(--adv-text)", fontFamily: "'JetBrains Mono', monospace", fontSize: 11,
                 outline: "none",
               }}
             />
             {f.type === "password" && (
               <button
                 onClick={() => setVisible((p) => ({ ...p, [f.key]: !p[f.key] }))}
-                style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#3D7A94" }}
+                style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--adv-text-muted)" }}
               >
                 {visible[f.key] ? <EyeOff size={13} /> : <Eye size={13} />}
               </button>
             )}
           </div>
-          <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 11, color: "#3D7A94", marginTop: 3 }}>
+          <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: "var(--adv-text-muted)", marginTop: 3 }}>
             {f.description}
           </div>
         </div>
@@ -132,7 +132,7 @@ function TestButton({ label, color, onTest }: { label: string; color: string; on
         display: "flex", alignItems: "center", gap: 6,
         padding: "7px 14px", borderRadius: 4, cursor: state === "testing" ? "wait" : "pointer",
         border: `1px solid ${color}50`, background: `${color}10`, color,
-        fontFamily: "'Share Tech Mono', monospace", fontSize: 10,
+        fontFamily: "'JetBrains Mono', monospace", fontSize: 10,
         opacity: state === "testing" ? 0.7 : 1,
       }}
     >
@@ -149,7 +149,7 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
       onClick={() => onChange(!on)}
       style={{
         width: 36, height: 20, borderRadius: 10, cursor: "pointer",
-        background: on ? "rgba(0,212,255,0.8)" : "#1A3A50",
+        background: on ? "rgba(37,99,235,0.8)" : "#E2E8F0",
         position: "relative", transition: "background 0.2s ease", flexShrink: 0,
       }}
     >
@@ -191,8 +191,8 @@ export default function SettingsPage() {
           onClick={save}
           style={{
             display: "flex", alignItems: "center", gap: 6, padding: "6px 14px",
-            background: "#00D4FF", border: "none", borderRadius: 4,
-            color: "#050A0E", fontFamily: "'Share Tech Mono', monospace", fontSize: 10,
+            background: "#2563EB", border: "none", borderRadius: 4,
+            color: "#F8FAFC", fontFamily: "'JetBrains Mono', monospace", fontSize: 10,
             cursor: "pointer", fontWeight: 700,
           }}
         >
@@ -203,7 +203,7 @@ export default function SettingsPage() {
       <div style={{ display: "flex", gap: 20, height: "100%" }}>
         {/* Left nav */}
         <div style={{ width: 180, flexShrink: 0 }}>
-          <div style={{ background: "#0D1B26", border: "1px solid #1A3A50", borderRadius: 6, overflow: "hidden" }}>
+          <div style={{ background: "linear-gradient(160deg, rgba(37,99,235,0.05) 0%, #FFFFFF 55%)", border: "1px solid var(--adv-border)", borderRadius: 6, overflow: "hidden" }}>
             {sections.map((s) => {
               const Icon = s.icon;
               const active = activeSection === s.key;
@@ -213,13 +213,13 @@ export default function SettingsPage() {
                   onClick={() => setActiveSection(s.key)}
                   style={{
                     width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "11px 14px",
-                    background: active ? "rgba(0,212,255,0.06)" : "transparent",
-                    border: "none", borderLeft: `2px solid ${active ? "#00D4FF" : "transparent"}`,
+                    background: active ? "rgba(37,99,235,0.06)" : "transparent",
+                    border: "none", borderLeft: `2px solid ${active ? "#2563EB" : "transparent"}`,
                     cursor: "pointer", textAlign: "left",
                   }}
                 >
-                  <Icon size={14} color={active ? "#00D4FF" : "#3D7A94"} />
-                  <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: active ? "#C8E8F0" : "#3D7A94" }}>
+                  <Icon size={14} color={active ? "#2563EB" : "#64748B"} />
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: active ? "#0F172A" : "#64748B" }}>
                     {s.label}
                   </span>
                 </button>
@@ -233,7 +233,7 @@ export default function SettingsPage() {
 
           {/* ── Engagement ── */}
           {activeSection === "engagement" && (
-            <div className="animate-slide-in" style={{ background: "#0D1B26", border: "1px solid #1A3A50", borderRadius: 8, padding: 24 }}>
+            <div className="animate-slide-in" style={{ background: "linear-gradient(160deg, rgba(37,99,235,0.05) 0%, #FFFFFF 55%)", border: "1px solid var(--adv-border)", borderRadius: 8, padding: 24 }}>
               <SectionHeader icon={Globe} label="ENGAGEMENT METADATA" />
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                 {[
@@ -242,31 +242,31 @@ export default function SettingsPage() {
                   { label: "Lead Assessor",    val: assessorName,   set: setAssessorName,   ph: "Security Engineer" },
                 ].map((f) => (
                   <div key={f.label}>
-                    <label style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94", display: "block", marginBottom: 5 }}>{f.label}</label>
+                    <label style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", display: "block", marginBottom: 5 }}>{f.label}</label>
                     <input
                       value={f.val}
                       onChange={(e) => f.set(e.target.value)}
                       placeholder={f.ph}
                       style={{
                         width: "100%", boxSizing: "border-box",
-                        background: "#050A0E", border: "1px solid #1A3A50", borderRadius: 5,
-                        padding: "8px 12px", color: "#C8E8F0",
-                        fontFamily: "'Rajdhani', sans-serif", fontSize: 14, outline: "none",
+                        background: "var(--adv-bg)", border: "1px solid var(--adv-border)", borderRadius: 5,
+                        padding: "8px 12px", color: "var(--adv-text)",
+                        fontFamily: "'Inter', sans-serif", fontSize: 14, outline: "none",
                       }}
                     />
                   </div>
                 ))}
               </div>
               <div style={{ marginTop: 20 }}>
-                <label style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94", display: "block", marginBottom: 8 }}>SCOPE NETWORKS</label>
+                <label style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", display: "block", marginBottom: 8 }}>SCOPE NETWORKS</label>
                 <textarea
                   rows={3}
                   placeholder="10.10.0.0/24, 10.10.10.0/24, 172.16.1.0/24"
                   style={{
                     width: "100%", boxSizing: "border-box",
-                    background: "#050A0E", border: "1px solid #1A3A50", borderRadius: 5,
-                    padding: "8px 12px", color: "#C8E8F0",
-                    fontFamily: "'Share Tech Mono', monospace", fontSize: 11,
+                    background: "var(--adv-bg)", border: "1px solid var(--adv-border)", borderRadius: 5,
+                    padding: "8px 12px", color: "var(--adv-text)",
+                    fontFamily: "'JetBrains Mono', monospace", fontSize: 11,
                     resize: "vertical", outline: "none",
                   }}
                 />
@@ -276,27 +276,27 @@ export default function SettingsPage() {
 
           {/* ── Email ── */}
           {activeSection === "email" && (
-            <div className="animate-slide-in" style={{ background: "#0D1B26", border: "1px solid #1A3A50", borderRadius: 8, padding: 24 }}>
+            <div className="animate-slide-in" style={{ background: "linear-gradient(160deg, rgba(37,99,235,0.05) 0%, #FFFFFF 55%)", border: "1px solid var(--adv-border)", borderRadius: 8, padding: 24 }}>
               <SectionHeader icon={Mail} label="EMAIL / SMTP CONFIGURATION" badge="SMTP" />
-              <div style={{ background: "rgba(0,212,255,0.04)", border: "1px solid rgba(0,212,255,0.15)", borderRadius: 6, padding: 12, marginBottom: 20 }}>
-                <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: "#3D7A94", margin: 0, lineHeight: 1.5 }}>
-                  Set <code style={{ color: "#00D4FF" }}>SMTP_HOST</code>, <code style={{ color: "#00D4FF" }}>SMTP_TO</code>, and credentials in <code style={{ color: "#00D4FF" }}>.env.local</code> for real email delivery. These fields show current config — changes require a server restart.
+              <div style={{ background: "rgba(37,99,235,0.04)", border: "1px solid rgba(37,99,235,0.15)", borderRadius: 6, padding: 12, marginBottom: 20 }}>
+                <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: "var(--adv-text-muted)", margin: 0, lineHeight: 1.5 }}>
+                  Set <code style={{ color: "var(--adv-accent)" }}>SMTP_HOST</code>, <code style={{ color: "var(--adv-accent)" }}>SMTP_TO</code>, and credentials in <code style={{ color: "var(--adv-accent)" }}>.env.local</code> for real email delivery. These fields show current config — changes require a server restart.
                 </p>
               </div>
               <IntegrationFields fields={EMAIL_FIELDS} />
               <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-                <TestButton label="Test Connection" color="#00D4FF" onTest={() => success("SMTP Test", "Connection successful (preview mode).")} />
-                <TestButton label="Send Test Email" color="#00FF88" onTest={() => success("Test Email Sent", "Check your inbox for the test alert.")} />
+                <TestButton label="Test Connection" color="#2563EB" onTest={() => success("SMTP Test", "Connection successful (preview mode).")} />
+                <TestButton label="Send Test Email" color="#059669" onTest={() => success("Test Email Sent", "Check your inbox for the test alert.")} />
               </div>
             </div>
           )}
 
           {/* ── MessageCircle ── */}
           {activeSection === "slack" && (
-            <div className="animate-slide-in" style={{ background: "#0D1B26", border: "1px solid #1A3A50", borderRadius: 8, padding: 24 }}>
+            <div className="animate-slide-in" style={{ background: "linear-gradient(160deg, rgba(37,99,235,0.05) 0%, #FFFFFF 55%)", border: "1px solid var(--adv-border)", borderRadius: 8, padding: 24 }}>
               <SectionHeader icon={MessageCircle} label="SLACK INTEGRATION" badge="WEBHOOK" />
-              <div style={{ marginBottom: 20, fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: "#3D7A94", lineHeight: 1.6 }}>
-                Create an Incoming Webhook in your MessageCircle App configuration and paste the URL below. Set <code style={{ color: "#00D4FF" }}>SLACK_WEBHOOK_URL</code> in <code style={{ color: "#00D4FF" }}>.env.local</code>.
+              <div style={{ marginBottom: 20, fontFamily: "'Inter', sans-serif", fontSize: 14, color: "var(--adv-text-muted)", lineHeight: 1.6 }}>
+                Create an Incoming Webhook in your MessageCircle App configuration and paste the URL below. Set <code style={{ color: "var(--adv-accent)" }}>SLACK_WEBHOOK_URL</code> in <code style={{ color: "var(--adv-accent)" }}>.env.local</code>.
               </div>
               <IntegrationFields fields={SLACK_FIELDS} />
               <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
@@ -307,10 +307,10 @@ export default function SettingsPage() {
 
           {/* ── Jira ── */}
           {activeSection === "jira" && (
-            <div className="animate-slide-in" style={{ background: "#0D1B26", border: "1px solid #1A3A50", borderRadius: 8, padding: 24 }}>
+            <div className="animate-slide-in" style={{ background: "linear-gradient(160deg, rgba(37,99,235,0.05) 0%, #FFFFFF 55%)", border: "1px solid var(--adv-border)", borderRadius: 8, padding: 24 }}>
               <SectionHeader icon={ExternalLink} label="JIRA INTEGRATION" badge="REST API v3" />
-              <div style={{ marginBottom: 20, fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: "#3D7A94", lineHeight: 1.6 }}>
-                Generates Jira issues in your security project when cases are escalated. Uses Atlassian REST API v3. Set env vars in <code style={{ color: "#00D4FF" }}>.env.local</code>.
+              <div style={{ marginBottom: 20, fontFamily: "'Inter', sans-serif", fontSize: 14, color: "var(--adv-text-muted)", lineHeight: 1.6 }}>
+                Generates Jira issues in your security project when cases are escalated. Uses Atlassian REST API v3. Set env vars in <code style={{ color: "var(--adv-accent)" }}>.env.local</code>.
               </div>
               <IntegrationFields fields={JIRA_FIELDS} />
               <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
@@ -321,16 +321,16 @@ export default function SettingsPage() {
 
           {/* ── SLA Policy ── */}
           {activeSection === "sla" && (
-            <div className="animate-slide-in" style={{ background: "#0D1B26", border: "1px solid #1A3A50", borderRadius: 8, padding: 24 }}>
+            <div className="animate-slide-in" style={{ background: "linear-gradient(160deg, rgba(37,99,235,0.05) 0%, #FFFFFF 55%)", border: "1px solid var(--adv-border)", borderRadius: 8, padding: 24 }}>
               <SectionHeader icon={Shield} label="SLA POLICY CONFIGURATION" />
-              <div style={{ marginBottom: 16, fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: "#3D7A94" }}>
+              <div style={{ marginBottom: 16, fontFamily: "'Inter', sans-serif", fontSize: 14, color: "var(--adv-text-muted)" }}>
                 SLA windows define the maximum time allowed to remediate findings by severity. Escalation triggers notification when the threshold is crossed.
               </div>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr>
                     {["SEVERITY", "SLA WINDOW", "ESCALATION TRIGGER", "COLOR"].map((h) => (
-                      <th key={h} style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94", padding: "8px 12px", textAlign: "left", borderBottom: "1px solid #1A3A50" }}>
+                      <th key={h} style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", padding: "8px 12px", textAlign: "left", borderBottom: "1px solid var(--adv-border)" }}>
                         {h}
                       </th>
                     ))}
@@ -338,16 +338,16 @@ export default function SettingsPage() {
                 </thead>
                 <tbody>
                   {SLA_POLICY.map((row, i) => (
-                    <tr key={row.severity} style={{ borderBottom: i < SLA_POLICY.length - 1 ? "1px solid rgba(26,58,80,0.3)" : "none" }}>
+                    <tr key={row.severity} style={{ borderBottom: i < SLA_POLICY.length - 1 ? "1px solid rgba(37,99,235,0.06)" : "none" }}>
                       <td style={{ padding: "12px 12px" }}>
-                        <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: row.color, background: `${row.color}15`, border: `1px solid ${row.color}30`, borderRadius: 4, padding: "2px 8px" }}>
+                        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: row.color, background: `${row.color}15`, border: `1px solid ${row.color}30`, borderRadius: 4, padding: "2px 8px" }}>
                           {row.severity}
                         </span>
                       </td>
-                      <td style={{ padding: "12px 12px", fontFamily: "'Share Tech Mono', monospace", fontSize: 12, color: "#C8E8F0" }}>
+                      <td style={{ padding: "12px 12px", fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: "var(--adv-text)" }}>
                         {row.hours}h
                       </td>
-                      <td style={{ padding: "12px 12px", fontFamily: "'Share Tech Mono', monospace", fontSize: 12, color: "#3D7A94" }}>
+                      <td style={{ padding: "12px 12px", fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: "var(--adv-text-muted)" }}>
                         {row.escalate} remaining
                       </td>
                       <td style={{ padding: "12px 12px" }}>
@@ -357,15 +357,15 @@ export default function SettingsPage() {
                   ))}
                 </tbody>
               </table>
-              <div style={{ marginTop: 16, padding: "12px 16px", background: "rgba(0,212,255,0.04)", border: "1px solid rgba(0,212,255,0.15)", borderRadius: 6, fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: "#3D7A94" }}>
-                SLA windows are defined in <code style={{ color: "#00D4FF" }}>lib/cases-store.ts</code>. Custom windows require a code change and redeploy.
+              <div style={{ marginTop: 16, padding: "12px 16px", background: "rgba(37,99,235,0.04)", border: "1px solid rgba(37,99,235,0.15)", borderRadius: 6, fontFamily: "'Inter', sans-serif", fontSize: 13, color: "var(--adv-text-muted)" }}>
+                SLA windows are defined in <code style={{ color: "var(--adv-accent)" }}>lib/cases-store.ts</code>. Custom windows require a code change and redeploy.
               </div>
             </div>
           )}
 
           {/* ── Notifications ── */}
           {activeSection === "notify" && (
-            <div className="animate-slide-in" style={{ background: "#0D1B26", border: "1px solid #1A3A50", borderRadius: 8, padding: 24 }}>
+            <div className="animate-slide-in" style={{ background: "linear-gradient(160deg, rgba(37,99,235,0.05) 0%, #FFFFFF 55%)", border: "1px solid var(--adv-border)", borderRadius: 8, padding: 24 }}>
               <SectionHeader icon={Bell} label="NOTIFICATION RULES" />
               <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
                 {(Object.entries({
@@ -381,12 +381,12 @@ export default function SettingsPage() {
                     style={{
                       display: "flex", justifyContent: "space-between", alignItems: "center",
                       padding: "14px 0",
-                      borderBottom: i < 5 ? "1px solid rgba(26,58,80,0.3)" : "none",
+                      borderBottom: i < 5 ? "1px solid rgba(37,99,235,0.06)" : "none",
                     }}
                   >
                     <div>
-                      <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, fontWeight: 600, color: "#C8E8F0" }}>{ruleMeta.label}</div>
-                      <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: "#3D7A94", marginTop: 2 }}>{ruleMeta.desc}</div>
+                      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 600, color: "var(--adv-text)" }}>{ruleMeta.label}</div>
+                      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: "var(--adv-text-muted)", marginTop: 2 }}>{ruleMeta.desc}</div>
                     </div>
                     <Toggle on={rules[ruleKey]} onChange={(v) => setRules((p) => ({ ...p, [ruleKey]: v }))} />
                   </div>

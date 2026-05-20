@@ -1,704 +1,717 @@
 "use client";
 
-import React, { useState } from "react";
-import { Menu, Network, Filter, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
-import { Sidebar } from "../../components/Sidebar";
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  Network, Target, AlertTriangle, Crosshair,
+  ChevronDown, ChevronRight, Copy, Check, RefreshCw,
+  ZoomIn, ZoomOut, Filter,
+} from "lucide-react";
+import { PageShell } from "../../components/PageShell";
+import { useToast } from "../../hooks/useToast";
 
-/* ─── Types ─── */
-interface GraphNode {
-  id: string;
-  label: string;
-  type: "workstation" | "server" | "dc" | "firewall" | "target" | "dmz";
-  zone: string;
-  x: number;
-  y: number;
-  compromised?: boolean;
+/* ─── Types (GraphVisualizer data model) ─── */
+type NodeType    = "Asset" | "Service" | "Finding" | "Credential" | "NetworkSegment";
+type RelationType = "HAS_SERVICE" | "HAS_FINDING" | "EXPLOITS" | "CONNECTS_TO" | "SAME_SEGMENT" | "CREDENTIAL_REUSE";
+type Severity    = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
+type PathStatus  = "VALIDATED" | "SIMULATING" | "PENDING";
+type TabKey      = "graph" | "paths" | "chokepoints" | "blast-radius";
+
+interface GNode {
+  id: string; label: string; type: NodeType;
+  criticality: Severity; compromised: boolean;
+  internetExposed: boolean; zone: string;
+  x: number; y: number;
 }
 
-interface GraphEdge {
-  from: string;
-  to: string;
-  technique: string;
-  ttpId: string;
-  severity: "CRITICAL" | "HIGH" | "MEDIUM";
-  validated: boolean;
+interface GEdge {
+  source: string; target: string; relation: RelationType;
+  technique?: string; weight: number; exploited: boolean;
 }
 
-interface PathDetail {
-  id: string;
-  name: string;
-  steps: string[];
-  technique: string;
-  ttpId: string;
-  severity: "CRITICAL" | "HIGH" | "MEDIUM";
-  confidence: number;
-  status: "VALIDATED" | "SIMULATING" | "PENDING";
+interface AttackPath {
+  id: string; name: string; hops: number; riskScore: number;
+  highlighted: boolean; nodeIds: string[];
+  edges: { source: string; target: string; relation: RelationType; technique?: string; ttpId?: string }[];
+  severity: Severity; status: PathStatus; confidence: number;
+  cypherQuery: string;
 }
 
-/* ─── Data ─── */
-const graphNodes: GraphNode[] = [
-  { id: "fw1",        label: "FW-EXT",        type: "firewall",    zone: "PERIMETER", x: 60,  y: 200, compromised: false },
-  { id: "web01",      label: "WEB-01",         type: "dmz",         zone: "DMZ",       x: 170, y: 140, compromised: false },
-  { id: "web02",      label: "WEB-02",         type: "dmz",         zone: "DMZ",       x: 170, y: 280, compromised: false },
-  { id: "fw2",        label: "FW-INT",         type: "firewall",    zone: "PERIMETER", x: 290, y: 200, compromised: false },
-  { id: "ws042",      label: "WS-042",         type: "workstation", zone: "CORP",      x: 410, y: 130, compromised: true  },
-  { id: "ws128",      label: "WS-128",         type: "workstation", zone: "CORP",      x: 410, y: 270, compromised: false },
-  { id: "svcsql",     label: "SVC-SQL",        type: "server",      zone: "CORP",      x: 540, y: 130, compromised: true  },
-  { id: "mgmtsrv",    label: "MGMT-SRV",       type: "server",      zone: "MGMT",      x: 540, y: 270, compromised: false },
-  { id: "dc01",       label: "DC01",           type: "dc",          zone: "CORP",      x: 670, y: 130, compromised: true  },
-  { id: "domadmin",   label: "DOMAIN ADMIN",   type: "target",      zone: "CORP",      x: 790, y: 130, compromised: true  },
-];
+interface Chokepoint {
+  nodeId: string; label: string; type: NodeType; zone: string;
+  pathCount: number; totalPaths: number; percentage: number;
+  remediationPriority: Severity;
+}
 
-const graphEdges: GraphEdge[] = [
-  { from: "fw1",    to: "web01",    technique: "Port Traversal",        ttpId: "T1190",     severity: "MEDIUM",   validated: true  },
-  { from: "fw1",    to: "web02",    technique: "Port Traversal",        ttpId: "T1190",     severity: "MEDIUM",   validated: true  },
-  { from: "web01",  to: "fw2",      technique: "Pivot",                 ttpId: "T1572",     severity: "HIGH",     validated: false },
-  { from: "web02",  to: "fw2",      technique: "Pivot",                 ttpId: "T1572",     severity: "HIGH",     validated: false },
-  { from: "fw2",    to: "ws042",    technique: "LLMNR Poisoning",       ttpId: "T1557.001", severity: "CRITICAL", validated: true  },
-  { from: "ws042",  to: "svcsql",   technique: "Kerberoasting",         ttpId: "T1558.003", severity: "CRITICAL", validated: true  },
-  { from: "ws042",  to: "ws128",    technique: "Lateral Move (WMI)",    ttpId: "T1021.003", severity: "HIGH",     validated: true  },
-  { from: "svcsql", to: "dc01",     technique: "Silver Ticket",         ttpId: "T1558.004", severity: "CRITICAL", validated: true  },
-  { from: "mgmtsrv",to: "dc01",     technique: "DCSync Attempt",        ttpId: "T1003.006", severity: "HIGH",     validated: false },
-  { from: "ws128",  to: "mgmtsrv",  technique: "WMI Remote Exec",       ttpId: "T1021.003", severity: "HIGH",     validated: false },
-  { from: "dc01",   to: "domadmin", technique: "Unconstrained Deleg.",  ttpId: "T1134.001", severity: "CRITICAL", validated: true  },
-];
+interface BlastNode {
+  nodeId: string; label: string; type: NodeType; zone: string;
+  hops: number; criticality: Severity;
+}
 
-const attackPaths: PathDetail[] = [
-  {
-    id: "AP-001",
-    name: "LLMNR → Kerberoast → DC01 → DA",
-    steps: ["WS-042", "SVC-SQL", "DC01", "DOMAIN ADMIN"],
-    technique: "Kerberoasting + Unconstrained Delegation",
-    ttpId: "T1558.003 / T1134.001",
-    severity: "CRITICAL",
-    confidence: 97,
-    status: "VALIDATED",
-  },
-  {
-    id: "AP-002",
-    name: "WMI Lateral → MGMT → DCSync",
-    steps: ["WS-042", "WS-128", "MGMT-SRV", "DC01"],
-    technique: "WMI Remote Execution + DCSync",
-    ttpId: "T1021.003 / T1003.006",
-    severity: "HIGH",
-    confidence: 82,
-    status: "SIMULATING",
-  },
-  {
-    id: "AP-003",
-    name: "Web Pivot → CORP Breakout",
-    steps: ["WEB-01", "FW-INT", "WS-042"],
-    technique: "Network Pivot via Proxy",
-    ttpId: "T1572",
-    severity: "HIGH",
-    confidence: 74,
-    status: "SIMULATING",
-  },
-  {
-    id: "AP-004",
-    name: "VLAN30 → VLAN10 Bypass",
-    steps: ["WS-128", "MGMT-SRV"],
-    technique: "ACL Misconfiguration",
-    ttpId: "T1599.001",
-    severity: "MEDIUM",
-    confidence: 71,
-    status: "PENDING",
-  },
-];
-
-const zoneColors: Record<string, string> = {
-  PERIMETER: "#3D7A94",
-  DMZ:       "#FF9900",
-  CORP:      "#00D4FF",
-  MGMT:      "#FF4444",
-};
+interface D3Graph {
+  nodes: GNode[]; edges: GEdge[];
+  paths: { id: string; hops: number; riskScore: number; highlighted: boolean }[];
+  indexingStrategy: string[]; cypherExamples: string[];
+}
 
 /* ─── Helpers ─── */
-function severityColor(s: "CRITICAL" | "HIGH" | "MEDIUM") {
-  if (s === "CRITICAL") return "#FF4444";
-  if (s === "HIGH")     return "#FF9900";
-  return "#FFD500";
+function sevColor(s: Severity | string) {
+  if (s === "CRITICAL") return "#FF1744";
+  if (s === "HIGH")     return "#FF6D00";
+  if (s === "MEDIUM")   return "#FFD600";
+  return "#00E676";
 }
 
-function nodeColor(n: GraphNode) {
-  if (n.compromised) return "#FF4444";
-  if (n.type === "firewall") return "#3D7A94";
-  if (n.type === "target")   return "#FF4444";
-  if (n.type === "dc")       return "#FF9900";
-  if (n.type === "dmz")      return "#FF9900";
-  return "#00D4FF";
+function nodeColor(n: GNode, inPath: boolean) {
+  if (n.compromised) return "#FF1744";
+  if (inPath)        return "var(--adv-accent)";
+  if (n.type === "NetworkSegment") return "#64748B";
+  if (n.type === "Finding")        return "#FF6D00";
+  if (n.type === "Credential")     return "#FFD600";
+  if (n.type === "Service")        return "#00D4FF";
+  return sevColor(n.criticality);
 }
 
-function edgeStroke(e: GraphEdge) {
-  if (!e.validated) return "#3D7A94";
-  return severityColor(e.severity);
+function nodeSymbol(n: GNode) {
+  if (n.label === "DC01")          return "DC";
+  if (n.label === "DOMAIN ADMIN")  return "DA";
+  if (n.type === "NetworkSegment") return "NET";
+  if (n.type === "Service")        return "SVC";
+  if (n.type === "Finding")        return "CVE";
+  if (n.type === "Credential")     return "KEY";
+  if (n.zone === "DMZ")            return "WEB";
+  return "HOST";
 }
 
-/* ─── SVG Helpers ─── */
-function getNode(id: string) {
-  return graphNodes.find((n) => n.id === id)!;
+function statusColor(s: PathStatus) {
+  if (s === "VALIDATED")  return "#00E676";
+  if (s === "SIMULATING") return "#FFD600";
+  return "#64748B";
+}
+
+function CopyBtn({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+      style={{ background: "none", border: "none", cursor: "pointer", color: copied ? "#00E676" : "#64748B", padding: "2px 4px" }}>
+      {copied ? <Check size={11} /> : <Copy size={11} />}
+    </button>
+  );
+}
+
+/* ─── SVG Graph ─── */
+const ZONE_X: Record<string, number> = { PERIMETER: 0, DMZ: 120, CORP: 280, MGMT: 600 };
+const ZONE_W: Record<string, number> = { PERIMETER: 120, DMZ: 160, CORP: 320, MGMT: 220 };
+const ZONE_COLOR: Record<string, string> = { PERIMETER: "#64748B", DMZ: "#FF6D00", CORP: "#2563EB", MGMT: "#FF1744" };
+
+function SVGGraph({
+  nodes, edges, selectedPath, hoveredNode, filterZone, filterType,
+  onHover, chokepointIds,
+}: {
+  nodes: GNode[]; edges: GEdge[];
+  selectedPath: AttackPath | null;
+  hoveredNode: string | null;
+  filterZone: string; filterType: string;
+  onHover: (id: string | null) => void;
+  chokepointIds: Set<string>;
+}) {
+  const pathNodeSet = new Set(selectedPath?.nodeIds ?? []);
+  const pathEdgeSet = new Set(
+    (selectedPath?.edges ?? []).map((e) => `${e.source}→${e.target}`)
+  );
+
+  const visNodes = nodes.filter((n) =>
+    (filterZone === "ALL" || n.zone === filterZone) &&
+    (filterType === "ALL" || n.type === filterType) &&
+    n.type !== "NetworkSegment"
+  );
+  const visNodeIds = new Set(visNodes.map((n) => n.id));
+
+  const visEdges = edges.filter(
+    (e) =>
+      visNodeIds.has(e.source) && visNodeIds.has(e.target) &&
+      e.relation !== "SAME_SEGMENT" && e.relation !== "HAS_FINDING" && e.relation !== "HAS_SERVICE"
+  );
+
+  return (
+    <svg width="100%" height="100%" viewBox="0 0 880 460" style={{ display: "block" }}>
+      <defs>
+        {["critical","high","medium","muted","cyan","yellow"].map((k) => {
+          const color = k === "critical" ? "#FF1744" : k === "high" ? "#FF6D00" : k === "medium" ? "#FFD600" : k === "muted" ? "#64748B" : k === "cyan" ? "#00D4FF" : "#FFD600";
+          return (
+            <marker key={k} id={`arrow-${k}`} markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L7,3 z" fill={color} />
+            </marker>
+          );
+        })}
+        <filter id="glow-red">
+          <feGaussianBlur stdDeviation="3" result="blur" />
+          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+        </filter>
+        <filter id="glow-cyan">
+          <feGaussianBlur stdDeviation="2" result="blur" />
+          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+        </filter>
+      </defs>
+
+      {/* Zone bands */}
+      {Object.entries(ZONE_X).map(([zone, x]) => (
+        <rect key={zone} x={x} y={0} width={ZONE_W[zone]} height={460}
+          fill={`${ZONE_COLOR[zone]}08`} />
+      ))}
+      {[120, 280, 600].map((x) => (
+        <line key={x} x1={x} y1={0} x2={x} y2={460} stroke="var(--adv-border)" strokeWidth={1} strokeDasharray="4,4" />
+      ))}
+      {Object.entries(ZONE_X).map(([zone, x]) => (
+        <text key={zone} x={x + 5} y={16} fill={ZONE_COLOR[zone]} fontSize={8}
+          fontFamily="'JetBrains Mono', monospace" opacity={0.6}>{zone}</text>
+      ))}
+
+      {/* Edges */}
+      {visEdges.map((edge, i) => {
+        const from = nodes.find((n) => n.id === edge.source);
+        const to   = nodes.find((n) => n.id === edge.target);
+        if (!from || !to) return null;
+
+        const inPath = pathEdgeSet.has(`${edge.source}→${edge.target}`);
+        const color =
+          edge.relation === "CREDENTIAL_REUSE" ? "#FFD600" :
+          edge.relation === "EXPLOITS" ? sevColor("CRITICAL") :
+          edge.exploited ? sevColor("HIGH") : "#64748B";
+
+        const arrowId =
+          edge.relation === "CREDENTIAL_REUSE" ? "arrow-yellow" :
+          edge.relation === "EXPLOITS" ? "arrow-critical" :
+          edge.exploited ? "arrow-high" : "arrow-muted";
+
+        return (
+          <g key={i}>
+            <line x1={from.x} y1={from.y} x2={to.x} y2={to.y}
+              stroke={color}
+              strokeWidth={inPath ? 2.5 : 0.8}
+              strokeOpacity={inPath ? 1 : 0.3}
+              strokeDasharray={!edge.exploited ? "5,3" : "none"}
+              markerEnd={`url(#${arrowId})`} />
+            {inPath && edge.technique && (
+              <text x={(from.x + to.x) / 2} y={(from.y + to.y) / 2 - 7}
+                fill={color} fontSize={7} fontFamily="'JetBrains Mono', monospace" textAnchor="middle">
+                {edge.technique}
+              </text>
+            )}
+          </g>
+        );
+      })}
+
+      {/* Nodes */}
+      {visNodes.map((node) => {
+        const inPath   = pathNodeSet.has(node.id);
+        const isChokepoint = chokepointIds.has(node.id);
+        const isHovered = hoveredNode === node.id;
+        const color = nodeColor(node, inPath);
+        const r = node.label === "DOMAIN ADMIN" ? 18 : node.label === "DC01" ? 16 : 13;
+
+        return (
+          <g key={node.id} style={{ cursor: "pointer" }}
+            onMouseEnter={() => onHover(node.id)}
+            onMouseLeave={() => onHover(null)}>
+
+            {/* Chokepoint pulse ring */}
+            {isChokepoint && (
+              <circle cx={node.x} cy={node.y} r={r + 10}
+                fill="none" stroke="#FF6D00" strokeWidth={1.5}
+                strokeOpacity={0.5} className="animate-pulse-dot" />
+            )}
+            {/* Path glow ring */}
+            {inPath && (
+              <circle cx={node.x} cy={node.y} r={r + 6}
+                fill="none" stroke={color} strokeWidth={1}
+                strokeOpacity={0.4} className="animate-pulse-dot" />
+            )}
+
+            <circle cx={node.x} cy={node.y} r={r}
+              fill={inPath ? `${color}20` : "var(--adv-panel)"}
+              stroke={color} strokeWidth={inPath ? 2 : 1}
+              filter={node.compromised ? "url(#glow-red)" : inPath ? "url(#glow-cyan)" : "none"} />
+
+            <text x={node.x} y={node.y + 4} fill={color}
+              fontSize={node.label === "DOMAIN ADMIN" ? 7 : 7}
+              fontFamily="'JetBrains Mono', monospace"
+              textAnchor="middle" fontWeight="bold">
+              {nodeSymbol(node)}
+            </text>
+
+            <text x={node.x} y={node.y + r + 13} fill={inPath ? color : "var(--adv-text-muted)"}
+              fontSize={8.5} fontFamily="'JetBrains Mono', monospace" textAnchor="middle">
+              {node.label}
+            </text>
+
+            {node.compromised && (
+              <circle cx={node.x + r - 3} cy={node.y - r + 3} r={4} fill="#FF1744" opacity={0.9} />
+            )}
+            {isChokepoint && !node.compromised && (
+              <circle cx={node.x + r - 3} cy={node.y - r + 3} r={4} fill="#FF6D00" opacity={0.9} />
+            )}
+
+            {isHovered && (
+              <g>
+                <rect x={node.x + 22} y={node.y - 35} width={135} height={52}
+                  rx={4} fill="var(--adv-panel)" stroke="var(--adv-border)" strokeWidth={1} />
+                <text x={node.x + 30} y={node.y - 20} fill="var(--adv-text)"
+                  fontSize={8.5} fontFamily="'JetBrains Mono', monospace">{node.label}</text>
+                <text x={node.x + 30} y={node.y - 8} fill={color}
+                  fontSize={7.5} fontFamily="'JetBrains Mono', monospace">{node.type} · {node.zone}</text>
+                <text x={node.x + 30} y={node.y + 4} fill={node.compromised ? "#FF1744" : "#00E676"}
+                  fontSize={7.5} fontFamily="'JetBrains Mono', monospace">
+                  {node.compromised ? "COMPROMISED" : "INTACT"}{isChokepoint ? " · CHOKEPOINT" : ""}
+                </text>
+              </g>
+            )}
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+/* ─── Path card ─── */
+function PathCard({ path, selected, onClick }: { path: AttackPath; selected: boolean; onClick: () => void }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="card-hover" style={{
+      background: selected ? "rgba(37,99,235,0.06)" : "var(--adv-bg)",
+      border: `1px solid ${selected ? sevColor(path.severity) + "50" : "var(--adv-border)"}`,
+      borderRadius: 6, marginBottom: 8, overflow: "hidden",
+    }}>
+      <div onClick={() => { onClick(); setOpen(true); }}
+        style={{ padding: "10px 14px", cursor: "pointer", display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ width: 8, height: 8, borderRadius: "50%", background: sevColor(path.severity), flexShrink: 0 }} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--adv-accent)" }}>{path.id}</span>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: sevColor(path.severity),
+              background: `${sevColor(path.severity)}15`, borderRadius: 3, padding: "0 5px" }}>{path.severity}</span>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9,
+              color: statusColor(path.status) }}>{path.status}</span>
+          </div>
+          <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: "var(--adv-text)", marginTop: 2 }}>{path.name}</div>
+          <div style={{ display: "flex", gap: 12, marginTop: 3 }}>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)" }}>
+              {path.hops} hops · score {path.riskScore}
+            </span>
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <div style={{ width: 40, height: 3, background: "var(--adv-border)", borderRadius: 2, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${path.confidence}%`, background: path.confidence >= 90 ? "#00E676" : path.confidence >= 75 ? "var(--adv-accent)" : "#FF6D00" }} />
+              </div>
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)" }}>{path.confidence}%</span>
+            </div>
+          </div>
+        </div>
+        <button onClick={(e) => { e.stopPropagation(); setOpen((p) => !p); }}
+          style={{ background: "none", border: "none", cursor: "pointer", color: "#64748B", padding: 4 }}>
+          {open ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+        </button>
+      </div>
+
+      {open && (
+        <div style={{ borderTop: "1px solid var(--adv-border)", padding: "10px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
+          {/* Hop chain */}
+          <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 5 }}>
+            {path.nodeIds.map((nid, i) => (
+              <React.Fragment key={nid}>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text)", background: "var(--adv-panel)", border: "1px solid var(--adv-border)", borderRadius: 3, padding: "2px 6px" }}>{nid}</span>
+                {i < path.nodeIds.length - 1 && <span style={{ color: "var(--adv-text-muted)", fontSize: 10 }}>→</span>}
+              </React.Fragment>
+            ))}
+          </div>
+          {/* Edges */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            {path.edges.map((e, i) => (
+              <div key={i} style={{ display: "flex", gap: 6, fontFamily: "'JetBrains Mono', monospace", fontSize: 9 }}>
+                <span style={{ color: "var(--adv-text-muted)" }}>{e.source}</span>
+                <span style={{ color: "#FFD600", background: "rgba(255,214,0,0.08)", borderRadius: 2, padding: "0 4px" }}>{e.technique ?? e.relation}</span>
+                <span style={{ color: "var(--adv-text-muted)" }}>{e.target}</span>
+                {e.ttpId && <span style={{ color: "#00D4FF" }}>{e.ttpId}</span>}
+              </div>
+            ))}
+          </div>
+          {/* Cypher */}
+          <div style={{ background: "var(--adv-panel)", border: "1px solid var(--adv-border)", borderRadius: 4 }}>
+            <div style={{ padding: "4px 8px", borderBottom: "1px solid var(--adv-border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 8, color: "var(--adv-text-muted)" }}>CYPHER QUERY</span>
+              <CopyBtn text={path.cypherQuery} />
+            </div>
+            <pre style={{ margin: 0, padding: "6px 10px", fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "#00D4FF", lineHeight: 1.5, overflowX: "auto" }}>{path.cypherQuery}</pre>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 /* ─── Main Page ─── */
 export default function AttackGraphPage() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [selectedPath, setSelectedPath] = useState<string | null>("AP-001");
-  const [filterZone, setFilterZone] = useState<string>("ALL");
-  const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+  const { error: toastError } = useToast();
+  const [graphData,   setGraphData]   = useState<D3Graph | null>(null);
+  const [paths,       setPaths]       = useState<AttackPath[]>([]);
+  const [chokepoints, setChokepoints] = useState<Chokepoint[]>([]);
+  const [loading,     setLoading]     = useState(true);
+  const [activeTab,   setActiveTab]   = useState<TabKey>("graph");
 
-  const activePath = attackPaths.find((p) => p.id === selectedPath);
+  const [selectedPath, setSelectedPath] = useState<AttackPath | null>(null);
+  const [hoveredNode,  setHoveredNode]  = useState<string | null>(null);
+  const [filterZone,   setFilterZone]   = useState("ALL");
+  const [filterType,   setFilterType]   = useState("ALL");
 
-  const isNodeInPath = (nodeId: string) => {
-    if (!selectedPath) return false;
-    const path = attackPaths.find((p) => p.id === selectedPath);
-    if (!path) return false;
-    return path.steps.some((s) => {
-      const n = graphNodes.find((nd) => nd.label === s);
-      return n?.id === nodeId;
-    });
-  };
+  const [blastAsset,  setBlastAsset]  = useState("ws-042");
+  const [blastResult, setBlastResult] = useState<{ reachableNodes: BlastNode[]; totalReachable: number; criticalReachable: number } | null>(null);
+  const [blastLoading, setBlastLoading] = useState(false);
+
+  const engagementId = "ENG-001";
+
+  useEffect(() => {
+    Promise.all([
+      fetch(`/api/engagements/${engagementId}/attack-graph`).then((r) => r.json()),
+      fetch(`/api/engagements/${engagementId}/attack-paths`).then((r) => r.json()),
+      fetch(`/api/engagements/${engagementId}/chokepoints`).then((r) => r.json()),
+    ])
+      .then(([g, p, c]) => {
+        setGraphData(g);
+        setPaths(p.paths ?? []);
+        if (p.paths?.length) setSelectedPath(p.paths[0]);
+        setChokepoints(c.chokepoints ?? []);
+      })
+      .catch(() => toastError("Load Error", "Failed to load attack graph data."))
+      .finally(() => setLoading(false));
+  }, [toastError]);
+
+  const loadBlastRadius = useCallback(() => {
+    if (!blastAsset.trim()) return;
+    setBlastLoading(true);
+    fetch(`/api/engagements/${engagementId}/blast-radius/${blastAsset}`)
+      .then((r) => r.json())
+      .then(setBlastResult)
+      .catch(() => toastError("Error", "Failed to compute blast radius."))
+      .finally(() => setBlastLoading(false));
+  }, [blastAsset, toastError]);
+
+  const chokepointIds = new Set(chokepoints.map((c) => c.nodeId));
+  const compromisedCount = graphData?.nodes.filter((n) => n.compromised).length ?? 0;
+  const criticalCount    = chokepoints.filter((c) => c.remediationPriority === "CRITICAL").length;
+
+  const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
+    { key: "graph",        label: "ATTACK GRAPH",   icon: <Network size={12} /> },
+    { key: "paths",        label: `PATHS (${paths.length})`, icon: <Target size={12} /> },
+    { key: "chokepoints",  label: `CHOKEPOINTS (${chokepoints.length})`, icon: <AlertTriangle size={12} /> },
+    { key: "blast-radius", label: "BLAST RADIUS",   icon: <Crosshair size={12} /> },
+  ];
 
   return (
-    <div
-      style={{
-        display: "flex",
-        height: "100vh",
-        background: "#050A0E",
-        fontFamily: "'Rajdhani', 'Segoe UI', sans-serif",
-        overflow: "hidden",
-      }}
+    <PageShell
+      title="ATTACK GRAPH"
+      subtitle="GRAPHBUILDER · PATHANALYZER · CHOKEPOINTS · BLAST RADIUS"
+      statusItems={[
+        { label: "COMPROMISED", value: String(compromisedCount), color: compromisedCount > 0 ? "#FF1744" : "var(--adv-text-muted)" },
+        { label: "PATHS",       value: String(paths.length),     color: "var(--adv-accent)" },
+        { label: "CHOKEPOINTS", value: String(criticalCount),    color: criticalCount > 0 ? "#FF6D00" : "var(--adv-text-muted)" },
+      ]}
     >
-      {sidebarOpen && (
-        <div
-          className="md:hidden"
-          onClick={() => setSidebarOpen(false)}
-          style={{ position: "fixed", inset: 0, background: "rgba(5,10,14,0.75)", zIndex: 40 }}
-        />
-      )}
-
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        {/* Header */}
-        <header
-          style={{
-            height: 52,
-            borderBottom: "1px solid #1A3A50",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "0 20px",
-            flexShrink: 0,
-            background: "#050A0E",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <button
-              className="md:hidden"
-              onClick={() => setSidebarOpen(true)}
-              style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
-            >
-              <Menu size={20} color="#00D4FF" />
-            </button>
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 18, color: "#00D4FF", letterSpacing: 3 }}>ADVERSA</span>
-            <span style={{ color: "#1A3A50" }}>|</span>
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#3D7A94" }}>ATTACK GRAPH v0.9.1</span>
-            <Network size={14} color="#00D4FF" style={{ marginLeft: 4 }} />
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#FF4444" }}>
-              {graphNodes.filter((n) => n.compromised).length} NODES COMPROMISED
-            </span>
-            <span style={{ color: "#1A3A50" }}>|</span>
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#FF9900" }}>
-              {attackPaths.length} ATTACK PATHS
-            </span>
-          </div>
-        </header>
-
-        <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-          {/* Main Graph Area */}
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-            {/* Toolbar */}
-            <div
-              style={{
-                padding: "8px 16px",
-                borderBottom: "1px solid #1A3A50",
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                flexShrink: 0,
-                background: "#050A0E",
-              }}
-            >
-              <Filter size={13} color="#3D7A94" />
-              <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94" }}>ZONE:</span>
-              {["ALL", "DMZ", "CORP", "MGMT", "PERIMETER"].map((z) => (
-                <button
-                  key={z}
-                  onClick={() => setFilterZone(z)}
-                  style={{
-                    fontFamily: "'Share Tech Mono', monospace",
-                    fontSize: 10,
-                    padding: "3px 10px",
-                    borderRadius: 4,
-                    border: "1px solid",
-                    borderColor: filterZone === z ? "#00D4FF" : "#1A3A50",
-                    background: filterZone === z ? "rgba(0,212,255,0.08)" : "transparent",
-                    color: filterZone === z ? "#00D4FF" : "#3D7A94",
-                    cursor: "pointer",
-                    transition: "all 0.15s ease",
-                  }}
-                >
-                  {z}
-                </button>
-              ))}
-              <div style={{ flex: 1 }} />
-              <div style={{ display: "flex", gap: 4 }}>
-                {[
-                  { label: "CRITICAL", color: "#FF4444" },
-                  { label: "HIGH",     color: "#FF9900" },
-                  { label: "MEDIUM",   color: "#FFD500" },
-                  { label: "UNVALIDATED", color: "#3D7A94" },
-                ].map((l) => (
-                  <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                    <div style={{ width: 20, height: 2, background: l.color }} />
-                    <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: l.color }}>{l.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* SVG Graph */}
-            <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
-              {/* Zone Labels */}
-              <div
-                style={{
-                  position: "absolute",
-                  top: 12,
-                  left: 16,
-                  display: "flex",
-                  gap: 12,
-                  zIndex: 2,
-                }}
-              >
-                {Object.entries(zoneColors).map(([zone, color]) => (
-                  <span
-                    key={zone}
-                    style={{
-                      fontFamily: "'Share Tech Mono', monospace",
-                      fontSize: 9,
-                      color,
-                      letterSpacing: 1,
-                      opacity: filterZone === "ALL" || filterZone === zone ? 1 : 0.2,
-                    }}
-                  >
-                    ■ {zone}
-                  </span>
-                ))}
-              </div>
-
-              <svg
-                width="100%"
-                height="100%"
-                viewBox="0 0 880 420"
-                style={{ display: "block" }}
-              >
-                {/* Zone background bands */}
-                <rect x="0"   y="0" width="120"  height="420" fill="rgba(61,122,148,0.04)" />
-                <rect x="120" y="0" width="160"  height="420" fill="rgba(255,153,0,0.04)" />
-                <rect x="280" y="0" width="400"  height="420" fill="rgba(0,212,255,0.03)" />
-                <rect x="680" y="0" width="200"  height="420" fill="rgba(255,68,68,0.04)" />
-
-                {/* Zone separators */}
-                {[120, 280, 680].map((x) => (
-                  <line key={x} x1={x} y1={0} x2={x} y2={420} stroke="#1A3A50" strokeWidth={1} strokeDasharray="4,4" />
-                ))}
-
-                {/* Zone labels */}
-                {[
-                  { x: 10,  label: "PERIMETER", color: "#3D7A94" },
-                  { x: 130, label: "DMZ",        color: "#FF9900"  },
-                  { x: 290, label: "CORP",        color: "#00D4FF"  },
-                  { x: 690, label: "MGMT",        color: "#FF4444"  },
-                ].map((z) => (
-                  <text
-                    key={z.label}
-                    x={z.x}
-                    y={14}
-                    fill={z.color}
-                    fontSize={8}
-                    fontFamily="'Share Tech Mono', monospace"
-                    opacity={0.5}
-                  >
-                    {z.label}
-                  </text>
-                ))}
-
-                {/* Defs */}
-                <defs>
-                  <marker id="arrow-critical" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-                    <path d="M0,0 L0,6 L8,3 z" fill="#FF4444" />
-                  </marker>
-                  <marker id="arrow-high" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-                    <path d="M0,0 L0,6 L8,3 z" fill="#FF9900" />
-                  </marker>
-                  <marker id="arrow-medium" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-                    <path d="M0,0 L0,6 L8,3 z" fill="#FFD500" />
-                  </marker>
-                  <marker id="arrow-muted" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-                    <path d="M0,0 L0,6 L8,3 z" fill="#3D7A94" />
-                  </marker>
-                  <filter id="glow-red">
-                    <feGaussianBlur stdDeviation="3" result="coloredBlur" />
-                    <feMerge><feMergeNode in="coloredBlur" /><feMergeNode in="SourceGraphic" /></feMerge>
-                  </filter>
-                  <filter id="glow-cyan">
-                    <feGaussianBlur stdDeviation="2" result="coloredBlur" />
-                    <feMerge><feMergeNode in="coloredBlur" /><feMergeNode in="SourceGraphic" /></feMerge>
-                  </filter>
-                </defs>
-
-                {/* Edges */}
-                {graphEdges
-                  .filter((e) => filterZone === "ALL" || true)
-                  .map((edge, i) => {
-                    const from = getNode(edge.from);
-                    const to = getNode(edge.to);
-                    if (!from || !to) return null;
-                    const color = edge.validated ? severityColor(edge.severity) : "#3D7A94";
-                    const markerId = edge.validated
-                      ? edge.severity === "CRITICAL" ? "arrow-critical"
-                        : edge.severity === "HIGH" ? "arrow-high" : "arrow-medium"
-                      : "arrow-muted";
-                    const inActivePath =
-                      selectedPath &&
-                      (() => {
-                        const path = attackPaths.find((p) => p.id === selectedPath);
-                        if (!path) return false;
-                        const pathNodeIds = path.steps
-                          .map((s) => graphNodes.find((n) => n.label === s)?.id)
-                          .filter(Boolean);
-                        const idx = pathNodeIds.indexOf(edge.from);
-                        return idx >= 0 && pathNodeIds[idx + 1] === edge.to;
-                      })();
-
-                    return (
-                      <g key={i}>
-                        <line
-                          x1={from.x}
-                          y1={from.y}
-                          x2={to.x}
-                          y2={to.y}
-                          stroke={color}
-                          strokeWidth={inActivePath ? 2.5 : 1}
-                          strokeOpacity={inActivePath ? 1 : 0.35}
-                          strokeDasharray={edge.validated ? "none" : "5,3"}
-                          markerEnd={`url(#${markerId})`}
-                        />
-                        {inActivePath && (
-                          <text
-                            x={(from.x + to.x) / 2}
-                            y={(from.y + to.y) / 2 - 6}
-                            fill={color}
-                            fontSize={7.5}
-                            fontFamily="'Share Tech Mono', monospace"
-                            textAnchor="middle"
-                          >
-                            {edge.ttpId}
-                          </text>
-                        )}
-                      </g>
-                    );
-                  })}
-
-                {/* Nodes */}
-                {graphNodes
-                  .filter(
-                    (n) =>
-                      filterZone === "ALL" ||
-                      n.zone === filterZone
-                  )
-                  .map((node) => {
-                    const color = nodeColor(node);
-                    const inPath = isNodeInPath(node.id);
-                    const isHovered = hoveredNode === node.id;
-                    const r = node.type === "target" ? 18 : node.type === "dc" ? 16 : 14;
-
-                    return (
-                      <g
-                        key={node.id}
-                        style={{ cursor: "pointer" }}
-                        onMouseEnter={() => setHoveredNode(node.id)}
-                        onMouseLeave={() => setHoveredNode(null)}
-                      >
-                        {/* Outer glow ring for active path nodes */}
-                        {inPath && (
-                          <circle
-                            cx={node.x}
-                            cy={node.y}
-                            r={r + 8}
-                            fill="none"
-                            stroke={color}
-                            strokeWidth={1}
-                            strokeOpacity={0.3}
-                            className="animate-pulse-dot"
-                          />
-                        )}
-                        <circle
-                          cx={node.x}
-                          cy={node.y}
-                          r={r}
-                          fill={inPath ? `${color}22` : "#0D1B26"}
-                          stroke={color}
-                          strokeWidth={inPath ? 2 : 1}
-                          filter={node.compromised ? "url(#glow-red)" : inPath ? "url(#glow-cyan)" : "none"}
-                        />
-                        {/* Node type icon shorthand */}
-                        <text
-                          x={node.x}
-                          y={node.y + 4}
-                          fill={color}
-                          fontSize={node.type === "target" ? 8 : 7}
-                          fontFamily="'Share Tech Mono', monospace"
-                          textAnchor="middle"
-                          fontWeight={inPath ? "bold" : "normal"}
-                        >
-                          {node.type === "dc" ? "DC" :
-                           node.type === "firewall" ? "FW" :
-                           node.type === "target" ? "DA" :
-                           node.type === "dmz" ? "WEB" : "WS"}
-                        </text>
-                        {/* Label below node */}
-                        <text
-                          x={node.x}
-                          y={node.y + r + 12}
-                          fill={inPath ? color : "#3D7A94"}
-                          fontSize={8.5}
-                          fontFamily="'Share Tech Mono', monospace"
-                          textAnchor="middle"
-                        >
-                          {node.label}
-                        </text>
-                        {/* Compromised marker */}
-                        {node.compromised && (
-                          <text x={node.x + r - 4} y={node.y - r + 4} fill="#FF4444" fontSize={9} textAnchor="middle">●</text>
-                        )}
-                        {/* Hover tooltip */}
-                        {isHovered && (
-                          <g>
-                            <rect
-                              x={node.x + 20}
-                              y={node.y - 30}
-                              width={120}
-                              height={42}
-                              rx={3}
-                              fill="#0D1B26"
-                              stroke="#1A3A50"
-                              strokeWidth={1}
-                            />
-                            <text x={node.x + 28} y={node.y - 16} fill="#C8E8F0" fontSize={8} fontFamily="'Share Tech Mono', monospace">{node.label}</text>
-                            <text x={node.x + 28} y={node.y - 5} fill={zoneColors[node.zone] || "#3D7A94"} fontSize={7.5} fontFamily="'Share Tech Mono', monospace">ZONE: {node.zone}</text>
-                            <text x={node.x + 28} y={node.y + 6} fill={node.compromised ? "#FF4444" : "#00FF88"} fontSize={7.5} fontFamily="'Share Tech Mono', monospace">{node.compromised ? "COMPROMISED" : "INTACT"}</text>
-                          </g>
-                        )}
-                      </g>
-                    );
-                  })}
-              </svg>
-            </div>
-          </div>
-
-          {/* Right Panel: Attack Paths */}
-          <aside
+      {/* Tab bar */}
+      <div style={{ display: "flex", borderBottom: "1px solid var(--adv-border)", marginBottom: 0, flexShrink: 0 }}>
+        {tabs.map(({ key, label, icon }) => (
+          <button key={key} onClick={() => setActiveTab(key)}
             style={{
-              width: 320,
-              borderLeft: "1px solid #1A3A50",
-              display: "flex",
-              flexDirection: "column",
-              flexShrink: 0,
-              overflow: "hidden",
-            }}
-            className="hidden lg:flex"
-          >
-            <div
-              style={{
-                padding: "12px 16px",
-                borderBottom: "1px solid #1A3A50",
-                fontFamily: "'Share Tech Mono', monospace",
-                fontSize: 12,
-                color: "#C8E8F0",
-                letterSpacing: 1,
-              }}
-            >
-              ATTACK PATHS
-            </div>
+              padding: "8px 16px", border: "none", background: "none", cursor: "pointer",
+              borderBottom: `2px solid ${activeTab === key ? "var(--adv-accent)" : "transparent"}`,
+              display: "flex", alignItems: "center", gap: 6, marginBottom: -1,
+              fontFamily: "'JetBrains Mono', monospace", fontSize: 10,
+              color: activeTab === key ? "var(--adv-accent)" : "var(--adv-text-muted)",
+              transition: "color 0.12s", whiteSpace: "nowrap",
+            }}>
+            {icon}{label}
+          </button>
+        ))}
+      </div>
 
-            <div style={{ flex: 1, overflowY: "auto" }}>
-              {attackPaths.map((path) => {
-                const isSelected = selectedPath === path.id;
-                return (
-                  <div
-                    key={path.id}
-                    onClick={() => setSelectedPath(isSelected ? null : path.id)}
-                    style={{
-                      padding: "12px 16px",
-                      borderBottom: "1px solid rgba(26,58,80,0.4)",
-                      cursor: "pointer",
-                      background: isSelected ? "rgba(0,212,255,0.04)" : "transparent",
-                      borderLeft: isSelected ? `2px solid ${severityColor(path.severity)}` : "2px solid transparent",
-                      transition: "background 0.15s ease",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                      <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#00D4FF" }}>{path.id}</span>
-                      <span
-                        style={{
-                          fontFamily: "'Share Tech Mono', monospace",
-                          fontSize: 9,
-                          padding: "2px 6px",
-                          borderRadius: 3,
-                          background: `${severityColor(path.severity)}15`,
-                          color: severityColor(path.severity),
-                        }}
-                      >
-                        {path.severity}
-                      </span>
+      {loading ? (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, gap: 10 }}>
+          <RefreshCw size={16} color="var(--adv-accent)" style={{ animation: "spin 1s linear infinite" }} />
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: "var(--adv-text-muted)" }}>BUILDING GRAPH…</span>
+        </div>
+      ) : (
+        <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+
+          {/* ── GRAPH TAB ─────────────────────────────────────────── */}
+          {activeTab === "graph" && graphData && (
+            <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+              {/* Graph + toolbar */}
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+                {/* Toolbar */}
+                <div style={{ padding: "8px 14px", borderBottom: "1px solid var(--adv-border)", display: "flex", alignItems: "center", gap: 10, flexShrink: 0, flexWrap: "wrap" }}>
+                  <Filter size={12} color="#64748B" />
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)" }}>ZONE</span>
+                  {["ALL","DMZ","CORP","MGMT","PERIMETER"].map((z) => (
+                    <button key={z} onClick={() => setFilterZone(z)}
+                      style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, padding: "2px 8px", borderRadius: 3, cursor: "pointer",
+                        border: `1px solid ${filterZone === z ? "var(--adv-accent)" : "var(--adv-border)"}`,
+                        background: filterZone === z ? "rgba(37,99,235,0.1)" : "transparent",
+                        color: filterZone === z ? "var(--adv-accent)" : "var(--adv-text-muted)" }}>
+                      {z}
+                    </button>
+                  ))}
+                  <span style={{ color: "var(--adv-border)" }}>|</span>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)" }}>TYPE</span>
+                  {["ALL","Asset","Service","Finding","Credential"].map((t) => (
+                    <button key={t} onClick={() => setFilterType(t)}
+                      style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, padding: "2px 8px", borderRadius: 3, cursor: "pointer",
+                        border: `1px solid ${filterType === t ? "#00D4FF" : "var(--adv-border)"}`,
+                        background: filterType === t ? "rgba(0,212,255,0.08)" : "transparent",
+                        color: filterType === t ? "#00D4FF" : "var(--adv-text-muted)" }}>
+                      {t}
+                    </button>
+                  ))}
+                  <div style={{ flex: 1 }} />
+                  {/* Legend */}
+                  {[
+                    { label: "EXPLOITED",  color: "#FF1744" },
+                    { label: "CREDENTIAL REUSE", color: "#FFD600" },
+                    { label: "POTENTIAL",  color: "#64748B" },
+                    { label: "CHOKEPOINT", color: "#FF6D00" },
+                  ].map((l) => (
+                    <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <div style={{ width: 16, height: 2, background: l.color }} />
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 8, color: "var(--adv-text-muted)" }}>{l.label}</span>
                     </div>
-                    <div
+                  ))}
+                </div>
+                <div style={{ flex: 1, overflow: "hidden" }}>
+                  <SVGGraph nodes={graphData.nodes} edges={graphData.edges}
+                    selectedPath={selectedPath} hoveredNode={hoveredNode}
+                    filterZone={filterZone} filterType={filterType}
+                    onHover={setHoveredNode} chokepointIds={chokepointIds} />
+                </div>
+              </div>
+
+              {/* Right panel */}
+              <div style={{ width: 300, borderLeft: "1px solid var(--adv-border)", display: "flex", flexDirection: "column", flexShrink: 0, overflow: "hidden" }}>
+                <div style={{ padding: "10px 14px", borderBottom: "1px solid var(--adv-border)", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--adv-text)", letterSpacing: 1 }}>
+                  ATTACK PATHS
+                </div>
+                <div style={{ flex: 1, overflowY: "auto", padding: "8px 10px" }}>
+                  {paths.map((path) => (
+                    <div key={path.id}
+                      onClick={() => setSelectedPath(selectedPath?.id === path.id ? null : path)}
+                      className="card-hover"
                       style={{
-                        fontFamily: "'Rajdhani', sans-serif",
-                        fontSize: 13,
-                        color: "#C8E8F0",
-                        marginBottom: 6,
-                        fontWeight: 500,
-                      }}
-                    >
-                      {path.name}
-                    </div>
-                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 6 }}>
-                      {path.steps.map((step, i) => (
-                        <React.Fragment key={step}>
-                          <span
-                            style={{
-                              fontFamily: "'Share Tech Mono', monospace",
-                              fontSize: 9,
-                              color: "#3D7A94",
-                              padding: "1px 5px",
-                              border: "1px solid #1A3A50",
-                              borderRadius: 3,
-                            }}
-                          >
-                            {step}
-                          </span>
-                          {i < path.steps.length - 1 && (
-                            <span style={{ color: "#1A3A50", fontSize: 9 }}>→</span>
-                          )}
-                        </React.Fragment>
-                      ))}
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#3D7A94" }}>{path.ttpId}</span>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <div
-                          style={{
-                            width: 50,
-                            height: 3,
-                            background: "rgba(26,58,80,0.4)",
-                            borderRadius: 2,
-                            overflow: "hidden",
-                          }}
-                        >
-                          <div
-                            style={{
-                              height: "100%",
-                              width: `${path.confidence}%`,
-                              background: path.confidence >= 90 ? "#00FF88" : path.confidence >= 75 ? "#00D4FF" : "#FF9900",
-                            }}
-                          />
-                        </div>
-                        <span
-                          style={{
-                            fontFamily: "'Share Tech Mono', monospace",
-                            fontSize: 10,
-                            color: path.confidence >= 90 ? "#00FF88" : path.confidence >= 75 ? "#00D4FF" : "#FF9900",
-                          }}
-                        >
-                          {path.confidence}%
-                        </span>
+                        padding: "10px 12px", marginBottom: 6, borderRadius: 5, cursor: "pointer",
+                        background: selectedPath?.id === path.id ? "rgba(37,99,235,0.06)" : "transparent",
+                        border: `1px solid ${selectedPath?.id === path.id ? sevColor(path.severity) + "40" : "var(--adv-border)"}`,
+                        borderLeft: `3px solid ${selectedPath?.id === path.id ? sevColor(path.severity) : "transparent"}`,
+                      }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-accent)" }}>{path.id}</span>
+                        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 8, color: sevColor(path.severity), background: `${sevColor(path.severity)}15`, borderRadius: 2, padding: "0 4px" }}>{path.severity}</span>
+                      </div>
+                      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: "var(--adv-text)", marginBottom: 4 }}>{path.name}</div>
+                      <div style={{ display: "flex", gap: 10, fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)" }}>
+                        <span>{path.hops} hops</span>
+                        <span>score {path.riskScore}</span>
+                        <span style={{ color: statusColor(path.status) }}>{path.status}</span>
                       </div>
                     </div>
+                  ))}
+                </div>
+                {selectedPath && (
+                  <div style={{ borderTop: "1px solid var(--adv-border)", padding: "10px 14px", background: "var(--adv-panel)" }}>
+                    <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", marginBottom: 6 }}>SELECTED PATH</div>
+                    <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: "var(--adv-text)", fontWeight: 600, marginBottom: 4 }}>{selectedPath.name}</div>
+                    {selectedPath.edges.map((e, i) => (
+                      <div key={i} style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", marginBottom: 2 }}>
+                        {e.source} <span style={{ color: "#FFD600" }}>→{e.technique ?? e.relation}→</span> {e.target}
+                      </div>
+                    ))}
+                    <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
+                      <CopyBtn text={selectedPath.cypherQuery} />
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)" }}>Copy Cypher</span>
+                    </div>
                   </div>
-                );
-              })}
+                )}
+              </div>
             </div>
+          )}
 
-            {/* Selected path detail */}
-            {activePath && (
-              <div
-                style={{
-                  borderTop: "1px solid #1A3A50",
-                  padding: "12px 16px",
-                  background: "#050A0E",
-                }}
-              >
-                <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94", marginBottom: 8, letterSpacing: 1 }}>
-                  PATH DETAIL
+          {/* ── PATHS TAB ─────────────────────────────────────────── */}
+          {activeTab === "paths" && (
+            <div style={{ flex: 1, overflowY: "auto", padding: "12px 0" }}>
+              <div style={{ marginBottom: 12, fontFamily: "'Inter', sans-serif", fontSize: 13, color: "var(--adv-text-muted)" }}>
+                {paths.length} attack paths found · sorted by risk score · each includes Cypher query for Neo4j import
+              </div>
+              {paths.map((p) => (
+                <PathCard key={p.id} path={p}
+                  selected={selectedPath?.id === p.id}
+                  onClick={() => setSelectedPath(p)} />
+              ))}
+              {graphData && (
+                <div style={{ marginTop: 16, background: "var(--adv-bg)", border: "1px solid var(--adv-border)", borderRadius: 6, overflow: "hidden" }}>
+                  <div style={{ padding: "10px 14px", borderBottom: "1px solid var(--adv-border)", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--adv-text)" }}>
+                    INDEXING STRATEGY (Neo4j &gt;10k nodes)
+                  </div>
+                  <div style={{ position: "relative" }}>
+                    <div style={{ position: "absolute", top: 6, right: 8 }}>
+                      <CopyBtn text={graphData.indexingStrategy.join("\n")} />
+                    </div>
+                    <pre style={{ margin: 0, padding: "10px 12px", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#00D4FF", lineHeight: 1.7, overflowX: "auto" }}>
+                      {graphData.indexingStrategy.join("\n")}
+                    </pre>
+                  </div>
                 </div>
-                <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#C8E8F0", marginBottom: 4 }}>
-                  Technique: <span style={{ color: "#00D4FF" }}>{activePath.technique}</span>
-                </div>
-                <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#C8E8F0", marginBottom: 4 }}>
-                  MITRE ATT&CK: <span style={{ color: "#FF9900" }}>{activePath.ttpId}</span>
-                </div>
-                <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#C8E8F0" }}>
-                  Status:{" "}
-                  <span
-                    style={{
-                      color:
-                        activePath.status === "VALIDATED"
-                          ? "#00FF88"
-                          : activePath.status === "SIMULATING"
-                          ? "#FF9900"
-                          : "#3D7A94",
-                    }}
-                  >
-                    {activePath.status}
-                  </span>
+              )}
+            </div>
+          )}
+
+          {/* ── CHOKEPOINTS TAB ───────────────────────────────────── */}
+          {activeTab === "chokepoints" && (
+            <div style={{ flex: 1, overflowY: "auto", padding: "12px 0" }}>
+              <div style={{ marginBottom: 12, fontFamily: "'Inter', sans-serif", fontSize: 13, color: "var(--adv-text-muted)" }}>
+                Chokepoints appear in &gt;50% of all paths to critical targets. Remediating these blocks the most attack paths.
+              </div>
+              <div style={{ background: "var(--adv-bg)", border: "1px solid var(--adv-border)", borderRadius: 6, overflow: "hidden" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr>
+                      {["NODE", "TYPE", "ZONE", "PATH COVERAGE", "APPEARS IN", "PRIORITY"].map((h) => (
+                        <th key={h} style={{ padding: "9px 14px", textAlign: "left", fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", borderBottom: "1px solid var(--adv-border)" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {chokepoints.map((cp, i) => (
+                      <tr key={cp.nodeId}>
+                        <td style={{ padding: "10px 14px", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: sevColor(cp.remediationPriority), borderBottom: "1px solid var(--adv-border)" }}>
+                          {cp.label}
+                          {cp.remediationPriority === "CRITICAL" && (
+                            <span className="animate-pulse-dot" style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "#FF6D00", marginLeft: 6, verticalAlign: "middle" }} />
+                          )}
+                        </td>
+                        <td style={{ padding: "10px 14px", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", borderBottom: "1px solid var(--adv-border)" }}>{cp.type}</td>
+                        <td style={{ padding: "10px 14px", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: ZONE_COLOR[cp.zone] ?? "var(--adv-text-muted)", borderBottom: "1px solid var(--adv-border)" }}>{cp.zone}</td>
+                        <td style={{ padding: "10px 14px", borderBottom: "1px solid var(--adv-border)" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <div style={{ width: 80, height: 6, background: "var(--adv-panel)", borderRadius: 3, overflow: "hidden" }}>
+                              <div style={{ height: "100%", width: `${cp.percentage}%`, background: sevColor(cp.remediationPriority), borderRadius: 3 }} />
+                            </div>
+                            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: sevColor(cp.remediationPriority) }}>{cp.percentage}%</span>
+                          </div>
+                        </td>
+                        <td style={{ padding: "10px 14px", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", borderBottom: "1px solid var(--adv-border)" }}>
+                          {cp.pathCount} / {cp.totalPaths} paths
+                        </td>
+                        <td style={{ padding: "10px 14px", borderBottom: "1px solid var(--adv-border)" }}>
+                          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: sevColor(cp.remediationPriority), background: `${sevColor(cp.remediationPriority)}15`, borderRadius: 3, padding: "1px 6px" }}>
+                            {cp.remediationPriority}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div style={{ marginTop: 12, background: "rgba(255,107,0,0.04)", border: "1px solid rgba(255,107,0,0.2)", borderRadius: 6, padding: "12px 14px" }}>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", marginBottom: 6 }}>CHOKEPOINT CYPHER QUERY</div>
+                <div style={{ position: "relative" }}>
+                  <div style={{ position: "absolute", top: 0, right: 0 }}>
+                    <CopyBtn text={graphData?.cypherExamples[2] ?? ""} />
+                  </div>
+                  <pre style={{ margin: 0, fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#00D4FF", lineHeight: 1.6, overflowX: "auto" }}>
+                    {graphData?.cypherExamples[2]}
+                  </pre>
                 </div>
               </div>
-            )}
-          </aside>
-        </div>
+            </div>
+          )}
 
-        {/* Footer */}
-        <footer
-          style={{
-            height: 32,
-            borderTop: "1px solid #1A3A50",
-            background: "#0D1B26",
-            display: "flex",
-            alignItems: "center",
-            padding: "0 20px",
-            gap: 16,
-            flexShrink: 0,
-          }}
-        >
-          {[
-            { label: "NODES", value: graphNodes.length, color: "#C8E8F0" },
-            { label: "EDGES", value: graphEdges.length, color: "#C8E8F0" },
-            { label: "COMPROMISED", value: graphNodes.filter((n) => n.compromised).length, color: "#FF4444" },
-            { label: "VALIDATED PATHS", value: attackPaths.filter((p) => p.status === "VALIDATED").length, color: "#00FF88" },
-          ].map((s, i) => (
-            <React.Fragment key={s.label}>
-              {i > 0 && <span style={{ color: "#1A3A50" }}>|</span>}
-              <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94" }}>
-                {s.label}: <span style={{ color: s.color }}>{s.value}</span>
-              </span>
-            </React.Fragment>
-          ))}
-        </footer>
-      </div>
-    </div>
+          {/* ── BLAST RADIUS TAB ──────────────────────────────────── */}
+          {activeTab === "blast-radius" && (
+            <div style={{ flex: 1, overflowY: "auto", padding: "12px 0" }}>
+              <div style={{ display: "flex", gap: 10, marginBottom: 16, alignItems: "center" }}>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)" }}>ASSET ID</div>
+                <input value={blastAsset} onChange={(e) => setBlastAsset(e.target.value)}
+                  placeholder="e.g. ws-042"
+                  style={{ background: "var(--adv-panel)", border: "1px solid var(--adv-border)", borderRadius: 5, padding: "6px 10px", color: "var(--adv-text)", fontFamily: "'JetBrains Mono', monospace", fontSize: 12, outline: "none", width: 180 }} />
+                <button onClick={loadBlastRadius} disabled={blastLoading}
+                  style={{ padding: "6px 16px", borderRadius: 5, border: "1px solid rgba(37,99,235,0.3)", background: "rgba(37,99,235,0.1)", color: "var(--adv-accent)", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                  {blastLoading ? <RefreshCw size={11} style={{ animation: "spin 1s linear infinite" }} /> : <Crosshair size={11} />}
+                  COMPUTE
+                </button>
+                <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: "var(--adv-text-muted)" }}>
+                  Available node IDs: fw-ext, web-01, ws-042, svc-sql, dc01, mgmt-srv
+                </div>
+              </div>
+
+              {blastResult ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+                    {[
+                      { label: "TOTAL REACHABLE",   value: blastResult.totalReachable,   color: "var(--adv-accent)" },
+                      { label: "CRITICAL ASSETS",   value: blastResult.criticalReachable, color: blastResult.criticalReachable > 0 ? "#FF1744" : "var(--adv-text-muted)" },
+                      { label: "SOURCE NODE",        value: blastAsset,                   color: "#FF6D00" },
+                    ].map((m) => (
+                      <div key={m.label} style={{ background: "var(--adv-panel)", border: "1px solid var(--adv-border)", borderRadius: 6, padding: "12px 14px" }}>
+                        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", marginBottom: 4 }}>{m.label}</div>
+                        <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 22, fontWeight: 700, color: m.color }}>{m.value}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{ background: "var(--adv-bg)", border: "1px solid var(--adv-border)", borderRadius: 6, overflow: "hidden" }}>
+                    <div style={{ padding: "10px 14px", borderBottom: "1px solid var(--adv-border)", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--adv-text)" }}>
+                      REACHABLE ASSETS FROM {blastAsset.toUpperCase()} — sorted by hop distance
+                    </div>
+                    <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                      <thead>
+                        <tr>
+                          {["HOPS", "NODE", "TYPE", "ZONE", "CRITICALITY"].map((h) => (
+                            <th key={h} style={{ padding: "8px 14px", textAlign: "left", fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", borderBottom: "1px solid var(--adv-border)" }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {blastResult.reachableNodes.map((n) => (
+                          <tr key={n.nodeId}>
+                            <td style={{ padding: "9px 14px", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: n.hops <= 2 ? "#FF1744" : "var(--adv-accent)", borderBottom: "1px solid var(--adv-border)" }}>{n.hops}</td>
+                            <td style={{ padding: "9px 14px", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--adv-text)", borderBottom: "1px solid var(--adv-border)" }}>{n.label}</td>
+                            <td style={{ padding: "9px 14px", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", borderBottom: "1px solid var(--adv-border)" }}>{n.type}</td>
+                            <td style={{ padding: "9px 14px", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: ZONE_COLOR[n.zone] ?? "var(--adv-text-muted)", borderBottom: "1px solid var(--adv-border)" }}>{n.zone}</td>
+                            <td style={{ padding: "9px 14px", borderBottom: "1px solid var(--adv-border)" }}>
+                              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: sevColor(n.criticality), background: `${sevColor(n.criticality)}15`, borderRadius: 3, padding: "1px 5px" }}>{n.criticality}</span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 0", gap: 12 }}>
+                  <Crosshair size={40} color="var(--adv-border)" />
+                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: "var(--adv-text-muted)" }}>
+                    Enter an asset ID and click COMPUTE to see the blast radius.
+                  </div>
+                </div>
+              )}
+
+              {graphData && (
+                <div style={{ marginTop: 12, background: "var(--adv-bg)", border: "1px solid var(--adv-border)", borderRadius: 6, overflow: "hidden" }}>
+                  <div style={{ padding: "9px 14px", borderBottom: "1px solid var(--adv-border)", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)" }}>BLAST RADIUS CYPHER</div>
+                  <div style={{ position: "relative" }}>
+                    <div style={{ position: "absolute", top: 6, right: 8 }}><CopyBtn text={graphData.cypherExamples[3]} /></div>
+                    <pre style={{ margin: 0, padding: "10px 12px", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#00D4FF", lineHeight: 1.6, overflowX: "auto" }}>{graphData.cypherExamples[3]}</pre>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </PageShell>
   );
 }

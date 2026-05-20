@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Menu } from "lucide-react";
 import { Sidebar } from "../components/Sidebar";
+import { DashboardCharts } from "../components/DashboardCharts";
 
 /* ─── Types ─── */
 interface MetricCardData {
@@ -45,9 +46,9 @@ interface EvidenceBreakdown {
 /* ─── Data ─── */
 const metrics: MetricCardData[] = [
   { label: "CRITICAL PATHS", value: 14, accent: "#FF4444", trend: 12 },
-  { label: "VALIDATED EXPLOITS", value: 6, accent: "#00FF88", trend: -3 },
+  { label: "VALIDATED EXPLOITS", value: 6, accent: "#059669", trend: -3 },
   { label: "AD ATTACK VECTORS", value: 3, accent: "#FF9900", trend: 5 },
-  { label: "DETECTION GAPS", value: 9, accent: "#00D4FF", trend: 8 },
+  { label: "DETECTION GAPS", value: 9, accent: "#2563EB", trend: 8 },
 ];
 
 const attackPaths: AttackPath[] = [
@@ -140,35 +141,35 @@ const severityColor = (s: AttackPath["severity"]) => {
     case "MEDIUM":
       return "#FFD500";
     default:
-      return "#3D7A94";
+      return "#64748B";
   }
 };
 
 const statusColor = (s: AttackPath["status"]) => {
   switch (s) {
     case "VALIDATED":
-      return "rgba(0,255,136,0.15)";
+      return "rgba(5,150,105,0.15)";
     case "SIMULATING":
       return "rgba(255,153,0,0.15)";
     case "PENDING":
-      return "rgba(61,122,148,0.15)";
+      return "rgba(100,116,139,0.15)";
   }
 };
 
 const statusTextColor = (s: AttackPath["status"]) => {
   switch (s) {
     case "VALIDATED":
-      return "#00FF88";
+      return "#059669";
     case "SIMULATING":
       return "#FF9900";
     case "PENDING":
-      return "#3D7A94";
+      return "#64748B";
   }
 };
 
 const barColor = (v: number) => {
-  if (v >= 90) return "#00FF88";
-  if (v >= 70) return "#00D4FF";
+  if (v >= 90) return "#059669";
+  if (v >= 70) return "#2563EB";
   if (v >= 50) return "#FF9900";
   return "#FF4444";
 };
@@ -176,7 +177,7 @@ const barColor = (v: number) => {
 /* ─── Components ─── */
 
 function StatusDot({ status }: { status: Agent["status"] }) {
-  const color = status === "ACTIVE" ? "#00FF88" : status === "THINKING" ? "#FF9900" : "#3D7A94";
+  const color = status === "ACTIVE" ? "#059669" : status === "THINKING" ? "#FF9900" : "#64748B";
   return (
     <span
       className={status === "ACTIVE" || status === "THINKING" ? "animate-pulse-dot" : ""}
@@ -218,7 +219,6 @@ export default function Dashboard() {
   const [agentsOnline, setAgentsOnline] = useState(3);
   const [criticalCount, setCriticalCount] = useState(4);
   const [opsActive, setOpsActive] = useState(3);
-
   /* Session Timer */
   useEffect(() => {
     const interval = setInterval(() => {
@@ -267,8 +267,8 @@ export default function Dashboard() {
       style={{
         display: "flex",
         height: "100vh",
-        background: "#050A0E",
-        fontFamily: "'Rajdhani', 'Segoe UI', sans-serif",
+        background: "#08090D",
+        fontFamily: "'Inter', sans-serif",
         overflow: "hidden",
       }}
     >
@@ -277,7 +277,7 @@ export default function Dashboard() {
         <div
           className="md:hidden"
           onClick={() => setSidebarOpen(false)}
-          style={{ position: "fixed", inset: 0, background: "rgba(5,10,14,0.75)", zIndex: 40 }}
+          style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.75)", zIndex: 40 }}
         />
       )}
 
@@ -289,13 +289,13 @@ export default function Dashboard() {
         <header
           style={{
             height: 52,
-            borderBottom: "1px solid #1A3A50",
+            borderBottom: "0.5px solid #1E2028",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
             padding: "0 20px",
             flexShrink: 0,
-            background: "#050A0E",
+            background: "#12141A",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -305,66 +305,58 @@ export default function Dashboard() {
               onClick={() => setSidebarOpen(true)}
               style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
             >
-              <Menu size={20} color="#00D4FF" />
+              <Menu size={20} color="#2563EB" />
             </button>
             <span
               style={{
-                fontFamily: "'Share Tech Mono', monospace",
-                fontSize: 18,
-                color: "#00D4FF",
-                letterSpacing: 3,
+                fontFamily: "'Inter', sans-serif",
+                fontSize: 14,
+                fontWeight: 600,
+                color: "#E8ECF0",
               }}
             >
-              ADVERSA
+              Dashboard
             </span>
-            <span style={{ color: "#1A3A50", fontSize: 14 }}>|</span>
+            <span style={{ color: "#2A2D38", fontSize: 16 }}>/</span>
             <span
               style={{
-                fontFamily: "'Share Tech Mono', monospace",
-                fontSize: 11,
-                color: "#3D7A94",
+                fontFamily: "'Inter', sans-serif",
+                fontSize: 12,
+                color: "#8C95A0",
+                fontWeight: 400,
               }}
             >
-              AI OFFENSIVE BRAIN v0.9.1
+              Security Overview
             </span>
             <span
               className="animate-pulse-dot"
               style={{
                 display: "inline-block",
-                width: 8,
-                height: 8,
+                width: 6,
+                height: 6,
                 borderRadius: "50%",
-                background: "#00FF88",
+                background: "#00C882",
                 marginLeft: 8,
+                flexShrink: 0,
               }}
             />
-            <span
-              style={{
-                fontFamily: "'Share Tech Mono', monospace",
-                fontSize: 11,
-                color: "#00FF88",
-                marginLeft: 4,
-              }}
-            >
-              ONLINE
-            </span>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#C8E8F0" }}>
-              AGENTS {agentsOnline}/5
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#8C95A0" }}>
+              AGENTS <span style={{ color: "#00C882" }}>{agentsOnline}</span>/5
             </span>
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#3D7A94" }}>|</span>
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#C8E8F0" }}>
+            <span style={{ width: 1, height: 14, background: "#1E2028" }} />
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#8C95A0" }}>
               SESSION {formatSessionTime(sessionTime)}
             </span>
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#3D7A94" }}>|</span>
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#FF4444" }}>
-              CRITICAL {criticalCount}
+            <span style={{ width: 1, height: 14, background: "#1E2028" }} />
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#FF4B4B" }}>
+              CRIT {criticalCount}
             </span>
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#3D7A94" }}>|</span>
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#FF9900" }}>
-              OPS ACTIVE {opsActive}
+            <span style={{ width: 1, height: 14, background: "#1E2028" }} />
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#FF8C00" }}>
+              OPS {opsActive}
             </span>
           </div>
         </header>
@@ -377,6 +369,9 @@ export default function Dashboard() {
             padding: 20,
           }}
         >
+          {/* ── React Query Dashboard Charts (Prompt 9) ── */}
+          <DashboardCharts />
+
           {/* SECTION A — Metric Cards */}
           <div
             style={{
@@ -389,15 +384,19 @@ export default function Dashboard() {
             {metrics.map((m) => (
               <div
                 key={m.label}
+                className="card-hover"
                 style={{
-                  background: "#0D1B26",
-                  border: "1px solid #1A3A50",
+                  background: "linear-gradient(135deg, rgba(37,99,235,0.05) 0%, var(--adv-panel) 60%)",
+                  border: "1px solid var(--adv-border)",
                   borderRadius: 6,
                   padding: "16px 20px",
                   position: "relative",
                   overflow: "hidden",
                 }}
               >
+                {/* top accent line */}
+                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg, ${m.accent}, transparent)` }} />
+                {/* bottom accent bar */}
                 <div
                   style={{
                     position: "absolute",
@@ -405,14 +404,14 @@ export default function Dashboard() {
                     left: 0,
                     right: 0,
                     height: 2,
-                    background: m.accent,
+                    background: `linear-gradient(90deg, ${m.accent}, #CBD5E1)`,
                   }}
                 />
                 <div
                   style={{
-                    fontFamily: "'Share Tech Mono', monospace",
+                    fontFamily: "'JetBrains Mono', monospace",
                     fontSize: 10,
-                    color: "#3D7A94",
+                    color: "var(--adv-text-muted)",
                     textTransform: "uppercase",
                     letterSpacing: 1,
                     marginBottom: 8,
@@ -429,7 +428,7 @@ export default function Dashboard() {
                 >
                   <span
                     style={{
-                      fontFamily: "'Rajdhani', 'Segoe UI', sans-serif",
+                      fontFamily: "'Inter', sans-serif",
                       fontSize: 28,
                       fontWeight: 700,
                       color: m.accent,
@@ -440,9 +439,9 @@ export default function Dashboard() {
                   </span>
                   <span
                     style={{
-                      fontFamily: "'Share Tech Mono', monospace",
+                      fontFamily: "'JetBrains Mono', monospace",
                       fontSize: 11,
-                      color: m.trend >= 0 ? "#00FF88" : "#FF4444",
+                      color: m.trend >= 0 ? "#059669" : "#FF4444",
                     }}
                   >
                     {m.trend >= 0 ? "↑" : "↓"} {Math.abs(m.trend)}%
@@ -465,7 +464,7 @@ export default function Dashboard() {
             }
             return (
               <div style={{ marginBottom: 20 }}>
-                <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94", letterSpacing: 2, marginBottom: 10 }}>SLA TRACKING</div>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", letterSpacing: 2, marginBottom: 10 }}>SLA TRACKING</div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginBottom: 14 }}>
                   {[
                     { label: "SLA BREACHED",    value: breachedItems.length, color: "#FF1744", pulse: breachedItems.length > 0 },
@@ -473,10 +472,10 @@ export default function Dashboard() {
                     { label: "DUE IN 48H",       value: upcoming48h.length,   color: "#FFD600", pulse: false },
                     { label: "ON TRACK",         value: SLA_FINDINGS.filter((f) => !getSlaInfo(f).breached && getSlaInfo(f).pct >= 25).length, color: "#00E676", pulse: false },
                   ].map((m) => (
-                    <div key={m.label} style={{ background: "#0D1B26", border: `1px solid ${m.color}25`, borderRadius: 6, padding: "12px 14px", position: "relative", overflow: "hidden" }}>
+                    <div key={m.label} style={{ background: "var(--adv-panel)", border: `1px solid ${m.color}25`, borderRadius: 6, padding: "12px 14px", position: "relative", overflow: "hidden" }}>
                       <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 2, background: m.color }} />
-                      <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#3D7A94", letterSpacing: 1, marginBottom: 6 }}>{m.label}</div>
-                      <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 26, fontWeight: 700, color: m.color, lineHeight: 1 }} className={m.pulse ? "animate-glow-critical" : ""}>
+                      <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", letterSpacing: 1, marginBottom: 6 }}>{m.label}</div>
+                      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 26, fontWeight: 700, color: m.color, lineHeight: 1 }} className={m.pulse ? "animate-glow-critical" : ""}>
                         {m.value}
                       </div>
                     </div>
@@ -485,23 +484,23 @@ export default function Dashboard() {
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 0.55fr", gap: 12 }}>
                   {/* Left: finding-level SLA status */}
-                  <div style={{ background: "#0D1B26", border: "1px solid #1A3A50", borderRadius: 6, overflow: "hidden" }}>
-                    <div style={{ padding: "10px 14px", borderBottom: "1px solid #1A3A50", fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#C8E8F0", letterSpacing: 1 }}>
+                  <div style={{ background: "var(--adv-panel)", border: "1px solid var(--adv-border)", borderRadius: 6, overflow: "hidden" }}>
+                    <div style={{ padding: "10px 14px", borderBottom: "1px solid var(--adv-border)", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text)", letterSpacing: 1 }}>
                       FINDING SLA STATUS
                     </div>
                     <div style={{ padding: "4px 0" }}>
                       {SLA_FINDINGS.map((f) => {
                         const s = getSlaInfo(f);
                         return (
-                          <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", borderBottom: "1px solid rgba(26,58,80,0.25)" }}>
-                            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: SEV_SLA_COLOR[f.severity], width: 58, flexShrink: 0 }}>{f.severity}</span>
+                          <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", borderBottom: "1px solid rgba(37,99,235,0.06)" }}>
+                            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: SEV_SLA_COLOR[f.severity], width: 58, flexShrink: 0 }}>{f.severity}</span>
                             <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: "#C8E8F0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{f.title}</div>
-                              <div style={{ height: 2, background: "#1A3A50", borderRadius: 1, marginTop: 4, overflow: "hidden" }}>
+                              <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: "var(--adv-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{f.title}</div>
+                              <div style={{ height: 2, background: "#E2E8F0", borderRadius: 1, marginTop: 4, overflow: "hidden" }}>
                                 <div className={s.breached ? "sla-pulse" : "progress-bar-fill"} style={{ height: "100%", width: `${s.pct}%`, background: s.color, borderRadius: 1 }} />
                               </div>
                             </div>
-                            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: s.color, flexShrink: 0, minWidth: 72, textAlign: "right" }}>{s.label}</span>
+                            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: s.color, flexShrink: 0, minWidth: 72, textAlign: "right" }}>{s.label}</span>
                           </div>
                         );
                       })}
@@ -509,8 +508,8 @@ export default function Dashboard() {
                   </div>
 
                   {/* Right: SLA by severity */}
-                  <div style={{ background: "#0D1B26", border: "1px solid #1A3A50", borderRadius: 6, overflow: "hidden" }}>
-                    <div style={{ padding: "10px 14px", borderBottom: "1px solid #1A3A50", fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#C8E8F0", letterSpacing: 1 }}>
+                  <div style={{ background: "var(--adv-panel)", border: "1px solid var(--adv-border)", borderRadius: 6, overflow: "hidden" }}>
+                    <div style={{ padding: "10px 14px", borderBottom: "1px solid var(--adv-border)", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text)", letterSpacing: 1 }}>
                       SLA BY SEVERITY
                     </div>
                     <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 14 }}>
@@ -521,13 +520,13 @@ export default function Dashboard() {
                         return (
                           <div key={sev}>
                             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                              <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: SEV_SLA_COLOR[sev] }}>{sev}</span>
-                              <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: pct === 100 ? "#00E676" : pct === 0 ? "#FF1744" : "#FFD600" }}>{pct}% on-time</span>
+                              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: SEV_SLA_COLOR[sev] }}>{sev}</span>
+                              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: pct === 100 ? "#00E676" : pct === 0 ? "#FF1744" : "#FFD600" }}>{pct}% on-time</span>
                             </div>
-                            <div style={{ height: 4, background: "#1A3A50", borderRadius: 2, overflow: "hidden" }}>
+                            <div style={{ height: 4, background: "#E2E8F0", borderRadius: 2, overflow: "hidden" }}>
                               <div className="progress-bar-fill" style={{ height: "100%", width: `${pct}%`, background: pct === 100 ? "#00E676" : pct === 0 ? "#FF1744" : "#FFD600", borderRadius: 2 }} />
                             </div>
-                            <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#3D7A94", marginTop: 3 }}>
+                            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", marginTop: 3 }}>
                               {stats.breached > 0 ? `${stats.breached} breached` : "No breaches"} · {total} total
                             </div>
                           </div>
@@ -552,8 +551,8 @@ export default function Dashboard() {
             {/* LEFT: Attack Paths Table */}
             <div
               style={{
-                background: "#0D1B26",
-                border: "1px solid #1A3A50",
+                background: "linear-gradient(160deg, rgba(37,99,235,0.05) 0%, var(--adv-panel) 50%)",
+                border: "1px solid var(--adv-border)",
                 borderRadius: 6,
                 overflow: "hidden",
               }}
@@ -561,10 +560,11 @@ export default function Dashboard() {
               <div
                 style={{
                   padding: "12px 16px",
-                  borderBottom: "1px solid #1A3A50",
-                  fontFamily: "'Share Tech Mono', monospace",
+                  borderBottom: "1px solid var(--adv-border)",
+                  background: "linear-gradient(90deg, rgba(37,99,235,0.06) 0%, transparent 70%)",
+                  fontFamily: "'JetBrains Mono', monospace",
                   fontSize: 12,
-                  color: "#C8E8F0",
+                  color: "var(--adv-text)",
                   letterSpacing: 1,
                 }}
               >
@@ -578,14 +578,14 @@ export default function Dashboard() {
                         <th
                           key={h}
                           style={{
-                            fontFamily: "'Share Tech Mono', monospace",
+                            fontFamily: "'JetBrains Mono', monospace",
                             fontSize: 10,
-                            color: "#3D7A94",
+                            color: "var(--adv-text-muted)",
                             textTransform: "uppercase",
                             letterSpacing: 1,
                             padding: "10px 12px",
                             textAlign: "left",
-                            borderBottom: "1px solid #1A3A50",
+                            borderBottom: "1px solid var(--adv-border)",
                             whiteSpace: "nowrap",
                           }}
                         >
@@ -601,15 +601,15 @@ export default function Dashboard() {
                         style={{
                           transition: "background 0.15s ease",
                         }}
-                        className="hover:bg-[rgba(0,212,255,0.02)]"
+                        className="hover:bg-[rgba(37,99,235,0.02)]"
                       >
                         <td
                           style={{
                             padding: "10px 12px",
-                            fontFamily: "'Share Tech Mono', monospace",
+                            fontFamily: "'JetBrains Mono', monospace",
                             fontSize: 11,
-                            color: "#00D4FF",
-                            borderBottom: i < attackPaths.length - 1 ? "1px solid rgba(26,58,80,0.3)" : "none",
+                            color: "var(--adv-accent)",
+                            borderBottom: i < attackPaths.length - 1 ? "1px solid rgba(37,99,235,0.06)" : "none",
                           }}
                         >
                           {path.id}
@@ -617,26 +617,26 @@ export default function Dashboard() {
                         <td
                           style={{
                             padding: "10px 12px",
-                            fontFamily: "'Share Tech Mono', monospace",
+                            fontFamily: "'JetBrains Mono', monospace",
                             fontSize: 11,
-                            color: "#C8E8F0",
-                            borderBottom: i < attackPaths.length - 1 ? "1px solid rgba(26,58,80,0.3)" : "none",
+                            color: "var(--adv-text)",
+                            borderBottom: i < attackPaths.length - 1 ? "1px solid rgba(37,99,235,0.06)" : "none",
                             whiteSpace: "nowrap",
                           }}
                         >
-                          <span style={{ color: "#3D7A94" }}>{path.origin}</span>
-                          <span style={{ color: "#1A3A50", margin: "0 6px" }}>→</span>
-                          <span style={{ color: "#C8E8F0" }}>{path.target}</span>
+                          <span style={{ color: "var(--adv-text-muted)" }}>{path.origin}</span>
+                          <span style={{ color: "var(--adv-border)", margin: "0 6px" }}>→</span>
+                          <span style={{ color: "var(--adv-text)" }}>{path.target}</span>
                         </td>
                         <td
                           style={{
                             padding: "10px 12px",
-                            borderBottom: i < attackPaths.length - 1 ? "1px solid rgba(26,58,80,0.3)" : "none",
+                            borderBottom: i < attackPaths.length - 1 ? "1px solid rgba(37,99,235,0.06)" : "none",
                           }}
                         >
                           <span
                             style={{
-                              fontFamily: "'Share Tech Mono', monospace",
+                              fontFamily: "'JetBrains Mono', monospace",
                               fontSize: 10,
                               padding: "2px 8px",
                               borderRadius: 4,
@@ -651,7 +651,7 @@ export default function Dashboard() {
                         <td
                           style={{
                             padding: "10px 12px",
-                            borderBottom: i < attackPaths.length - 1 ? "1px solid rgba(26,58,80,0.3)" : "none",
+                            borderBottom: i < attackPaths.length - 1 ? "1px solid rgba(37,99,235,0.06)" : "none",
                           }}
                         >
                           <ConfidenceBar value={path.confidence} />
@@ -659,12 +659,12 @@ export default function Dashboard() {
                         <td
                           style={{
                             padding: "10px 12px",
-                            borderBottom: i < attackPaths.length - 1 ? "1px solid rgba(26,58,80,0.3)" : "none",
+                            borderBottom: i < attackPaths.length - 1 ? "1px solid rgba(37,99,235,0.06)" : "none",
                           }}
                         >
                           <span
                             style={{
-                              fontFamily: "'Share Tech Mono', monospace",
+                              fontFamily: "'JetBrains Mono', monospace",
                               fontSize: 10,
                               padding: "2px 8px",
                               borderRadius: 4,
@@ -686,8 +686,8 @@ export default function Dashboard() {
             {/* RIGHT: Multi-Agent Framework */}
             <div
               style={{
-                background: "#0D1B26",
-                border: "1px solid #1A3A50",
+                background: "linear-gradient(160deg, rgba(37,99,235,0.05) 0%, var(--adv-panel) 50%)",
+                border: "1px solid var(--adv-border)",
                 borderRadius: 6,
                 overflow: "hidden",
                 display: "flex",
@@ -697,10 +697,11 @@ export default function Dashboard() {
               <div
                 style={{
                   padding: "12px 16px",
-                  borderBottom: "1px solid #1A3A50",
-                  fontFamily: "'Share Tech Mono', monospace",
+                  borderBottom: "1px solid var(--adv-border)",
+                  background: "linear-gradient(90deg, rgba(37,99,235,0.06) 0%, transparent 70%)",
+                  fontFamily: "'JetBrains Mono', monospace",
                   fontSize: 12,
-                  color: "#C8E8F0",
+                  color: "var(--adv-text)",
                   letterSpacing: 1,
                 }}
               >
@@ -715,19 +716,19 @@ export default function Dashboard() {
                       alignItems: "center",
                       gap: 10,
                       padding: "10px 16px",
-                      borderBottom: i < agents.length - 1 ? "1px solid rgba(26,58,80,0.25)" : "none",
+                      borderBottom: i < agents.length - 1 ? "1px solid rgba(37,99,235,0.06)" : "none",
                       transition: "background 0.15s ease",
                       cursor: "default",
                     }}
-                    className="hover:bg-[rgba(0,212,255,0.02)]"
+                    className="hover:bg-[rgba(37,99,235,0.02)]"
                   >
                     <StatusDot status={agent.status} />
                     <div style={{ minWidth: 0, flex: 1 }}>
                       <div
                         style={{
-                          fontFamily: "'Share Tech Mono', monospace",
+                          fontFamily: "'JetBrains Mono', monospace",
                           fontSize: 12,
-                          color: "#C8E8F0",
+                          color: "var(--adv-text)",
                           letterSpacing: 0.3,
                         }}
                       >
@@ -735,9 +736,9 @@ export default function Dashboard() {
                       </div>
                       <div
                         style={{
-                          fontFamily: "'Share Tech Mono', monospace",
+                          fontFamily: "'JetBrains Mono', monospace",
                           fontSize: 10,
-                          color: "#3D7A94",
+                          color: "var(--adv-text-muted)",
                           marginTop: 2,
                           whiteSpace: "nowrap",
                           overflow: "hidden",
@@ -764,8 +765,8 @@ export default function Dashboard() {
             {/* Col 1 — Protocol Abuse Engine */}
             <div
               style={{
-                background: "#0D1B26",
-                border: "1px solid #1A3A50",
+                background: "linear-gradient(160deg, rgba(37,99,235,0.05) 0%, var(--adv-panel) 50%)",
+                border: "1px solid var(--adv-border)",
                 borderRadius: 6,
                 overflow: "hidden",
               }}
@@ -773,10 +774,11 @@ export default function Dashboard() {
               <div
                 style={{
                   padding: "12px 16px",
-                  borderBottom: "1px solid #1A3A50",
-                  fontFamily: "'Share Tech Mono', monospace",
+                  borderBottom: "1px solid var(--adv-border)",
+                  background: "linear-gradient(90deg, rgba(37,99,235,0.06) 0%, transparent 70%)",
+                  fontFamily: "'JetBrains Mono', monospace",
                   fontSize: 12,
-                  color: "#C8E8F0",
+                  color: "var(--adv-text)",
                   letterSpacing: 1,
                 }}
               >
@@ -791,14 +793,14 @@ export default function Dashboard() {
                       alignItems: "center",
                       gap: 12,
                       padding: "10px 16px",
-                      borderBottom: i < protocols.length - 1 ? "1px solid rgba(26,58,80,0.25)" : "none",
+                      borderBottom: i < protocols.length - 1 ? "1px solid rgba(37,99,235,0.06)" : "none",
                     }}
                   >
                     <span
                       style={{
-                        fontFamily: "'Share Tech Mono', monospace",
+                        fontFamily: "'JetBrains Mono', monospace",
                         fontSize: 12,
-                        color: "#C8E8F0",
+                        color: "var(--adv-text)",
                         width: 60,
                         flexShrink: 0,
                       }}
@@ -809,7 +811,7 @@ export default function Dashboard() {
                       style={{
                         flex: 1,
                         height: 3,
-                        background: "rgba(26,58,80,0.3)",
+                        background: "rgba(37,99,235,0.06)",
                         borderRadius: 1,
                         overflow: "hidden",
                       }}
@@ -825,7 +827,7 @@ export default function Dashboard() {
                     </div>
                     <span
                       style={{
-                        fontFamily: "'Share Tech Mono', monospace",
+                        fontFamily: "'JetBrains Mono', monospace",
                         fontSize: 11,
                         color: barColor(p.value),
                         width: 35,
@@ -843,8 +845,8 @@ export default function Dashboard() {
             {/* Col 2 — Segmentation Validator */}
             <div
               style={{
-                background: "#0D1B26",
-                border: "1px solid #1A3A50",
+                background: "linear-gradient(160deg, rgba(37,99,235,0.05) 0%, var(--adv-panel) 50%)",
+                border: "1px solid var(--adv-border)",
                 borderRadius: 6,
                 overflow: "hidden",
               }}
@@ -852,10 +854,11 @@ export default function Dashboard() {
               <div
                 style={{
                   padding: "12px 16px",
-                  borderBottom: "1px solid #1A3A50",
-                  fontFamily: "'Share Tech Mono', monospace",
+                  borderBottom: "1px solid var(--adv-border)",
+                  background: "linear-gradient(90deg, rgba(37,99,235,0.06) 0%, transparent 70%)",
+                  fontFamily: "'JetBrains Mono', monospace",
                   fontSize: 12,
-                  color: "#C8E8F0",
+                  color: "var(--adv-text)",
                   letterSpacing: 1,
                 }}
               >
@@ -870,14 +873,14 @@ export default function Dashboard() {
                       alignItems: "center",
                       gap: 12,
                       padding: "10px 16px",
-                      borderBottom: i < zones.length - 1 ? "1px solid rgba(26,58,80,0.25)" : "none",
+                      borderBottom: i < zones.length - 1 ? "1px solid rgba(37,99,235,0.06)" : "none",
                     }}
                   >
                     <span
                       style={{
-                        fontFamily: "'Share Tech Mono', monospace",
+                        fontFamily: "'JetBrains Mono', monospace",
                         fontSize: 12,
-                        color: "#C8E8F0",
+                        color: "var(--adv-text)",
                         width: 50,
                         flexShrink: 0,
                       }}
@@ -888,7 +891,7 @@ export default function Dashboard() {
                       style={{
                         flex: 1,
                         height: 3,
-                        background: "rgba(26,58,80,0.3)",
+                        background: "rgba(37,99,235,0.06)",
                         borderRadius: 1,
                         overflow: "hidden",
                       }}
@@ -904,7 +907,7 @@ export default function Dashboard() {
                     </div>
                     <span
                       style={{
-                        fontFamily: "'Share Tech Mono', monospace",
+                        fontFamily: "'JetBrains Mono', monospace",
                         fontSize: 11,
                         color: barColor(z.score),
                         width: 35,
@@ -922,8 +925,8 @@ export default function Dashboard() {
             {/* Col 3 — Evidence Confidence */}
             <div
               style={{
-                background: "#0D1B26",
-                border: "1px solid #1A3A50",
+                background: "linear-gradient(160deg, rgba(37,99,235,0.05) 0%, var(--adv-panel) 50%)",
+                border: "1px solid var(--adv-border)",
                 borderRadius: 6,
                 overflow: "hidden",
                 display: "flex",
@@ -933,10 +936,11 @@ export default function Dashboard() {
               <div
                 style={{
                   padding: "12px 16px",
-                  borderBottom: "1px solid #1A3A50",
-                  fontFamily: "'Share Tech Mono', monospace",
+                  borderBottom: "1px solid var(--adv-border)",
+                  background: "linear-gradient(90deg, rgba(37,99,235,0.06) 0%, transparent 70%)",
+                  fontFamily: "'JetBrains Mono', monospace",
                   fontSize: 12,
-                  color: "#C8E8F0",
+                  color: "var(--adv-text)",
                   letterSpacing: 1,
                 }}
               >
@@ -955,10 +959,10 @@ export default function Dashboard() {
               >
                 <span
                   style={{
-                    fontFamily: "'Rajdhani', 'Segoe UI', sans-serif",
+                    fontFamily: "'Inter', sans-serif",
                     fontSize: 48,
                     fontWeight: 700,
-                    color: "#00D4FF",
+                    color: "var(--adv-accent)",
                     lineHeight: 1,
                   }}
                 >
@@ -966,9 +970,9 @@ export default function Dashboard() {
                 </span>
                 <span
                   style={{
-                    fontFamily: "'Share Tech Mono', monospace",
+                    fontFamily: "'JetBrains Mono', monospace",
                     fontSize: 10,
-                    color: "#3D7A94",
+                    color: "var(--adv-text-muted)",
                     letterSpacing: 2,
                     marginTop: 4,
                   }}
@@ -976,7 +980,7 @@ export default function Dashboard() {
                   AVG CONFIDENCE
                 </span>
               </div>
-              <div style={{ padding: "12px 16px", borderTop: "1px solid #1A3A50" }}>
+              <div style={{ padding: "12px 16px", borderTop: "1px solid var(--adv-border)" }}>
                 {evidenceBreakdown.map((e) => (
                   <div
                     key={e.label}
@@ -989,16 +993,16 @@ export default function Dashboard() {
                   >
                     <span
                       style={{
-                        fontFamily: "'Share Tech Mono', monospace",
+                        fontFamily: "'JetBrains Mono', monospace",
                         fontSize: 10,
-                        color: "#3D7A94",
+                        color: "var(--adv-text-muted)",
                       }}
                     >
                       {e.label}
                     </span>
                     <span
                       style={{
-                        fontFamily: "'Share Tech Mono', monospace",
+                        fontFamily: "'JetBrains Mono', monospace",
                         fontSize: 11,
                         color: barColor(e.value),
                       }}
@@ -1016,8 +1020,8 @@ export default function Dashboard() {
         <footer
           style={{
             height: 32,
-            borderTop: "1px solid #1A3A50",
-            background: "#0D1B26",
+            borderTop: "1px solid var(--adv-border)",
+            background: "linear-gradient(90deg, rgba(37,99,235,0.06) 0%, var(--adv-panel) 60%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
@@ -1026,24 +1030,24 @@ export default function Dashboard() {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94" }}>
-              ENGINE <span style={{ color: "#00FF88" }}>●</span> NOMINAL
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)" }}>
+              ENGINE <span style={{ color: "#059669" }}>●</span> NOMINAL
             </span>
-            <span style={{ color: "#1A3A50" }}>|</span>
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94" }}>
-              API <span style={{ color: "#00FF88" }}>●</span> ONLINE
+            <span style={{ color: "var(--adv-border)" }}>|</span>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)" }}>
+              API <span style={{ color: "#059669" }}>●</span> ONLINE
             </span>
-            <span style={{ color: "#1A3A50" }}>|</span>
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94" }}>
-              DB <span style={{ color: "#00FF88" }}>●</span> CONNECTED
+            <span style={{ color: "var(--adv-border)" }}>|</span>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)" }}>
+              DB <span style={{ color: "#059669" }}>●</span> CONNECTED
             </span>
           </div>
 
           <div
             style={{
-              fontFamily: "'Share Tech Mono', monospace",
+              fontFamily: "'JetBrains Mono', monospace",
               fontSize: 10,
-              color: "#3D7A94",
+              color: "var(--adv-text-muted)",
               textAlign: "center",
               flex: 1,
               overflow: "hidden",
@@ -1053,10 +1057,10 @@ export default function Dashboard() {
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94" }}>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)" }}>
               {utcTime}
             </span>
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94" }}>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)" }}>
               ADVERSA v0.9.1
             </span>
           </div>

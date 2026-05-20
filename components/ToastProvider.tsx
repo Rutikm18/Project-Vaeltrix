@@ -3,7 +3,6 @@
 import React, { createContext, useState, useCallback, useRef } from "react";
 import { CheckCircle, AlertTriangle, XCircle, Info, X } from "lucide-react";
 
-/* ─── Types ─── */
 export type ToastType = "success" | "error" | "warning" | "info";
 
 export interface Toast {
@@ -18,23 +17,55 @@ export interface Toast {
 interface ToastContextValue {
   toast: (opts: Omit<Toast, "id">) => void;
   success: (title: string, message?: string) => void;
-  error: (title: string, message?: string) => void;
+  error:   (title: string, message?: string) => void;
   warning: (title: string, message?: string) => void;
-  info: (title: string, message?: string) => void;
+  info:    (title: string, message?: string) => void;
   dismiss: (id: string) => void;
 }
 
 export const ToastContext = createContext<ToastContextValue | null>(null);
 
-/* ─── Style per type ─── */
-const TOAST_STYLES: Record<ToastType, { icon: React.ElementType; accent: string; bg: string; border: string }> = {
-  success: { icon: CheckCircle, accent: "#00FF88", bg: "rgba(0,255,136,0.06)", border: "rgba(0,255,136,0.25)" },
-  error:   { icon: XCircle,     accent: "#FF1744", bg: "rgba(255,23,68,0.06)",  border: "rgba(255,23,68,0.3)"  },
-  warning: { icon: AlertTriangle,accent: "#FFD600", bg: "rgba(255,214,0,0.06)", border: "rgba(255,214,0,0.25)" },
-  info:    { icon: Info,         accent: "#00D4FF", bg: "rgba(0,212,255,0.06)", border: "rgba(0,212,255,0.25)" },
+/*
+ * Toast colour system — light theme with semantic psychology:
+ *   success  → Emerald (completion, reward, safety)
+ *   error    → Red     (danger, critical, stop)
+ *   warning  → Amber   (caution, attention needed)
+ *   info     → Blue    (neutral information, trust)
+ */
+const TOAST_STYLES: Record<
+  ToastType,
+  { icon: React.ElementType; accent: string; bg: string; border: string; iconBg: string }
+> = {
+  success: {
+    icon:   CheckCircle,
+    accent: "#059669",
+    bg:     "var(--adv-panel)",
+    border: "#A7F3D0",
+    iconBg: "#D1FAE5",
+  },
+  error: {
+    icon:   XCircle,
+    accent: "#DC2626",
+    bg:     "var(--adv-panel)",
+    border: "#FECACA",
+    iconBg: "#FEE2E2",
+  },
+  warning: {
+    icon:   AlertTriangle,
+    accent: "#D97706",
+    bg:     "var(--adv-panel)",
+    border: "#FDE68A",
+    iconBg: "#FEF3C7",
+  },
+  info: {
+    icon:   Info,
+    accent: "#2563EB",
+    bg:     "var(--adv-panel)",
+    border: "#BFDBFE",
+    iconBg: "#DBEAFE",
+  },
 };
 
-/* ─── Single Toast ─── */
 function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string) => void }) {
   const style = TOAST_STYLES[toast.type];
   const Icon = style.icon;
@@ -43,28 +74,45 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
     <div
       className={toast.dismissing ? "animate-slide-out-right" : "animate-slide-in-right"}
       style={{
-        background: "#0D1B26",
+        background: style.bg,
         border: `1px solid ${style.border}`,
-        borderLeft: `3px solid ${style.accent}`,
-        borderRadius: 8,
-        padding: "12px 16px",
+        borderLeft: `4px solid ${style.accent}`,
+        borderRadius: 10,
+        padding: "12px 14px",
         display: "flex",
         gap: 12,
         alignItems: "flex-start",
         minWidth: 300,
         maxWidth: 380,
-        boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+        boxShadow: "0 8px 24px rgba(15,23,42,0.10), 0 2px 8px rgba(15,23,42,0.06)",
         cursor: "default",
       }}
     >
-      <Icon size={16} color={style.accent} style={{ flexShrink: 0, marginTop: 2 }} />
+      {/* Icon with coloured background pill */}
+      <div
+        style={{
+          width: 30,
+          height: 30,
+          borderRadius: 8,
+          background: style.iconBg,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+        }}
+      >
+        <Icon size={15} color={style.accent} />
+      </div>
+
+      {/* Content */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
-            fontFamily: "'Share Tech Mono', monospace",
-            fontSize: 12,
-            color: "#C8E8F0",
+            fontFamily: "'Inter', 'Inter', sans-serif",
+            fontSize: 13,
             fontWeight: 600,
+            color: "var(--adv-text)",
+            lineHeight: 1.3,
           }}
         >
           {toast.title}
@@ -72,30 +120,35 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
         {toast.message && (
           <div
             style={{
-              fontFamily: "'Rajdhani', sans-serif",
-              fontSize: 13,
-              color: "#3D7A94",
+              fontFamily: "'Inter', sans-serif",
+              fontSize: 12,
+              color: "var(--adv-text-muted)",
               marginTop: 3,
-              lineHeight: 1.4,
+              lineHeight: 1.5,
             }}
           >
             {toast.message}
           </div>
         )}
       </div>
+
+      {/* Dismiss */}
       <button
         onClick={() => onDismiss(toast.id)}
         style={{
           background: "none",
           border: "none",
           cursor: "pointer",
-          padding: 0,
-          color: "#3D7A94",
+          padding: 2,
+          color: "var(--adv-text-dim)",
           flexShrink: 0,
           display: "flex",
           alignItems: "center",
-          marginTop: 1,
+          borderRadius: 4,
+          transition: "color 0.1s ease",
         }}
+        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--adv-text-sub)"; }}
+        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--adv-text-dim)"; }}
       >
         <X size={14} />
       </button>
@@ -103,7 +156,6 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
   );
 }
 
-/* ─── Provider ─── */
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const timersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
@@ -133,15 +185,15 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   );
 
   const success = useCallback((title: string, message?: string) => toast({ type: "success", title, message }), [toast]);
-  const error   = useCallback((title: string, message?: string) => toast({ type: "error", title, message }), [toast]);
+  const error   = useCallback((title: string, message?: string) => toast({ type: "error",   title, message }), [toast]);
   const warning = useCallback((title: string, message?: string) => toast({ type: "warning", title, message }), [toast]);
-  const info    = useCallback((title: string, message?: string) => toast({ type: "info", title, message }), [toast]);
+  const info    = useCallback((title: string, message?: string) => toast({ type: "info",    title, message }), [toast]);
 
   return (
     <ToastContext.Provider value={{ toast, success, error, warning, info, dismiss }}>
       {children}
 
-      {/* Toast Container — top-right fixed */}
+      {/* Toast container — top right */}
       <div
         style={{
           position: "fixed",

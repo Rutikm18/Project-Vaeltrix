@@ -30,17 +30,17 @@ interface Finding {
 
 /* ─── Color Maps ─── */
 const SEV_COLOR: Record<Severity, string> = {
-  CRITICAL: "#FF1744", HIGH: "#FF6D00", MEDIUM: "#FFD600", LOW: "#00E676", INFO: "#40C4FF",
+  CRITICAL: "#FF1744", HIGH: "#FF6D00", MEDIUM: "#FFD600", LOW: "#00E676", INFO: "#0284C7",
 };
 
 const STATUS_COLOR: Record<FindingStatus, string> = {
   OPEN:          "#FF1744",
   IN_REVIEW:     "#FF9900",
-  IN_REMEDIATION:"#00D4FF",
-  VERIFIED:      "#00FF88",
-  CLOSED:        "#3D7A94",
+  IN_REMEDIATION:"#2563EB",
+  VERIFIED:      "#059669",
+  CLOSED:        "#64748B",
   ACCEPTED:      "#9C27B0",
-  FALSE_POSITIVE:"#3D7A94",
+  FALSE_POSITIVE:"#64748B",
 };
 
 const STATUS_LABEL: Record<FindingStatus, string> = {
@@ -53,7 +53,7 @@ const SLA_HOURS: Partial<Record<Severity, number>> = { CRITICAL: 24, HIGH: 72, M
 
 function getSlaColor(discoveredAt: string, severity: Severity): { color: string; label: string; pct: number } {
   const slaH = SLA_HOURS[severity];
-  if (!slaH) return { color: "#3D7A94", label: "N/A", pct: 100 };
+  if (!slaH) return { color: "var(--adv-text-muted)", label: "N/A", pct: 100 };
   const due = new Date(discoveredAt).getTime() + slaH * 3_600_000;
   const now = Date.now();
   const leftMs = due - now;
@@ -220,7 +220,7 @@ function CopyBtn({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <button onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-      style={{ background: "none", border: "none", cursor: "pointer", color: copied ? "#00FF88" : "#3D7A94", padding: "2px 4px" }}>
+      style={{ background: "none", border: "none", cursor: "pointer", color: copied ? "#059669" : "#64748B", padding: "2px 4px" }}>
       {copied ? <Check size={12} /> : <Copy size={12} />}
     </button>
   );
@@ -230,7 +230,7 @@ function CopyBtn({ text }: { text: string }) {
 function SevBadge({ s }: { s: Severity }) {
   return (
     <span style={{
-      fontFamily: "'Share Tech Mono', monospace", fontSize: 10, padding: "2px 8px", borderRadius: 4,
+      fontFamily: "'JetBrains Mono', monospace", fontSize: 10, padding: "2px 8px", borderRadius: 4,
       background: `${SEV_COLOR[s]}15`, color: SEV_COLOR[s], border: `1px solid ${SEV_COLOR[s]}30`,
     }}>{s}</span>
   );
@@ -242,7 +242,7 @@ function StatusBadge({ s, onClick }: { s: FindingStatus; onClick?: () => void })
     <span
       onClick={onClick}
       style={{
-        fontFamily: "'Share Tech Mono', monospace", fontSize: 10, padding: "2px 8px", borderRadius: 4,
+        fontFamily: "'JetBrains Mono', monospace", fontSize: 10, padding: "2px 8px", borderRadius: 4,
         background: `${STATUS_COLOR[s]}12`, color: STATUS_COLOR[s], border: `1px solid ${STATUS_COLOR[s]}30`,
         cursor: onClick ? "pointer" : "default",
       }}
@@ -273,14 +273,14 @@ function RemediationChecklist({ steps, findingId }: { steps: (string | RemStep)[
                 onClick={() => toggle(key)}
                 style={{
                   width: 16, height: 16, borderRadius: 4, flexShrink: 0, marginTop: 2, cursor: "pointer",
-                  background: checks[key] ? "rgba(0,255,136,0.2)" : "transparent",
-                  border: `1.5px solid ${checks[key] ? "#00FF88" : "#1A3A50"}`,
+                  background: checks[key] ? "rgba(5,150,105,0.2)" : "transparent",
+                  border: `1.5px solid ${checks[key] ? "#059669" : "#E2E8F0"}`,
                   display: "flex", alignItems: "center", justifyContent: "center",
                 }}
               >
-                {checks[key] && <Check size={10} color="#00FF88" />}
+                {checks[key] && <Check size={10} color="#059669" />}
               </div>
-              <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: checks[key] ? "#3D7A94" : "#C8E8F0", textDecoration: checks[key] ? "line-through" : "none", lineHeight: 1.5 }}>{s}</span>
+              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: checks[key] ? "#64748B" : "#0F172A", textDecoration: checks[key] ? "line-through" : "none", lineHeight: 1.5 }}>{s}</span>
             </div>
           );
         }
@@ -289,44 +289,44 @@ function RemediationChecklist({ steps, findingId }: { steps: (string | RemStep)[
         const key = `${findingId}-${i}`;
         const done = checks[key] ?? s.completed;
         return (
-          <div key={i} style={{ background: "#050A0E", border: `1px solid ${done ? "rgba(0,255,136,0.2)" : "#1A3A50"}`, borderRadius: 6, padding: "10px 12px" }}>
+          <div key={i} style={{ background: "var(--adv-bg)", border: `1px solid ${done ? "rgba(5,150,105,0.2)" : "#E2E8F0"}`, borderRadius: 6, padding: "10px 12px" }}>
             <div style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: s.command ? 8 : 0 }}>
               <div
                 onClick={() => toggle(key)}
                 style={{
                   width: 16, height: 16, borderRadius: 4, flexShrink: 0, marginTop: 2, cursor: "pointer",
-                  background: done ? "rgba(0,255,136,0.2)" : "transparent",
-                  border: `1.5px solid ${done ? "#00FF88" : "#1A3A50"}`,
+                  background: done ? "rgba(5,150,105,0.2)" : "transparent",
+                  border: `1.5px solid ${done ? "#059669" : "#E2E8F0"}`,
                   display: "flex", alignItems: "center", justifyContent: "center",
                 }}
               >
-                {done && <Check size={10} color="#00FF88" />}
+                {done && <Check size={10} color="#059669" />}
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, fontWeight: 600, color: done ? "#3D7A94" : "#C8E8F0", textDecoration: done ? "line-through" : "none" }}>
+                  <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600, color: done ? "#64748B" : "#0F172A", textDecoration: done ? "line-through" : "none" }}>
                     Step {s.step}: {s.title}
                   </span>
-                  <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#3D7A94" }}>~{s.estimatedHours}h</span>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)" }}>~{s.estimatedHours}h</span>
                 </div>
-                <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: "#3D7A94", marginTop: 2 }}>{s.description}</div>
+                <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: "var(--adv-text-muted)", marginTop: 2 }}>{s.description}</div>
               </div>
             </div>
             {s.command && (
-              <div style={{ background: "#0D1B26", borderRadius: 4, padding: "6px 10px", display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
-                <code style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#00D4FF", flex: 1, whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{s.command}</code>
+              <div style={{ background: "var(--adv-panel)", borderRadius: 4, padding: "6px 10px", display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
+                <code style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-accent)", flex: 1, whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{s.command}</code>
                 <CopyBtn text={s.command} />
               </div>
             )}
             {s.verification && (
               <div style={{ marginTop: 4, display: "flex", gap: 6, alignItems: "center" }}>
-                <CheckCircle size={10} color="#00FF88" />
-                <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#3D7A94" }}>Verify: </span>
-                <code style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#00FF88" }}>{s.verification}</code>
+                <CheckCircle size={10} color="#059669" />
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)" }}>Verify: </span>
+                <code style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "#059669" }}>{s.verification}</code>
               </div>
             )}
             {s.completedBy && (
-              <div style={{ marginTop: 4, fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#00FF88" }}>
+              <div style={{ marginTop: 4, fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "#059669" }}>
                 ✓ Completed by {s.completedBy}
               </div>
             )}
@@ -344,49 +344,49 @@ function FindingDetail({ f, onStatusChange }: { f: Finding; onStatusChange: (id:
 
   const WORKFLOW: { status: FindingStatus; label: string; color: string; desc: string }[] = [
     { status: "IN_REVIEW",      label: "Mark In Review",    color: "#FF9900", desc: "Begin active analysis" },
-    { status: "IN_REMEDIATION", label: "Start Remediation", color: "#00D4FF", desc: "Remediation in progress" },
-    { status: "VERIFIED",       label: "Mark Verified",     color: "#00FF88", desc: "Fix confirmed working" },
+    { status: "IN_REMEDIATION", label: "Start Remediation", color: "var(--adv-accent)", desc: "Remediation in progress" },
+    { status: "VERIFIED",       label: "Mark Verified",     color: "#059669", desc: "Fix confirmed working" },
     { status: "ACCEPTED",       label: "Accept Risk",       color: "#9C27B0", desc: "Documented risk acceptance" },
-    { status: "FALSE_POSITIVE", label: "False Positive",    color: "#3D7A94", desc: "Finding is invalid" },
+    { status: "FALSE_POSITIVE", label: "False Positive",    color: "var(--adv-text-muted)", desc: "Finding is invalid" },
   ];
 
   return (
-    <div className="animate-scale-in" style={{ background: "#0D1B26", border: "1px solid #1A3A50", borderRadius: 8, overflow: "hidden" }}>
+    <div className="animate-scale-in" style={{ background: "linear-gradient(160deg, rgba(37,99,235,0.05) 0%, #FFFFFF 55%)", border: "1px solid var(--adv-border)", borderRadius: 8, overflow: "hidden" }}>
       {/* Detail Header */}
-      <div style={{ padding: "16px 20px", borderBottom: "1px solid #1A3A50", background: "#050A0E" }}>
+      <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--adv-border)", background: "var(--adv-bg)" }}>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
           <SevBadge s={f.severity} />
           <StatusBadge s={f.status} />
-          <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94", background: "rgba(61,122,148,0.1)", border: "1px solid #1A3A50", borderRadius: 4, padding: "2px 8px" }}>
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", background: "rgba(100,116,139,0.1)", border: "1px solid var(--adv-border)", borderRadius: 4, padding: "2px 8px" }}>
             CVSS {f.cvss}
           </span>
           <span style={{
-            fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: sla.color,
+            fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: sla.color,
             background: `${sla.color}10`, border: `1px solid ${sla.color}30`, borderRadius: 4, padding: "2px 8px",
           }}>
             SLA: {sla.label}
           </span>
           {f.exploitability && (
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: f.exploitability === "EASY" ? "#FF1744" : f.exploitability === "MODERATE" ? "#FFD600" : "#00E676", background: "rgba(0,0,0,0.2)", border: "1px solid #1A3A50", borderRadius: 4, padding: "2px 8px" }}>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: f.exploitability === "EASY" ? "#FF1744" : f.exploitability === "MODERATE" ? "#FFD600" : "#00E676", background: "rgba(0,0,0,0.2)", border: "1px solid var(--adv-border)", borderRadius: 4, padding: "2px 8px" }}>
               EXPLOIT: {f.exploitability}
             </span>
           )}
         </div>
-        <h2 style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 18, fontWeight: 700, color: "#C8E8F0", margin: 0, lineHeight: 1.3 }}>{f.title}</h2>
-        <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94", marginTop: 6 }}>
+        <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 18, fontWeight: 700, color: "var(--adv-text)", margin: 0, lineHeight: 1.3 }}>{f.title}</h2>
+        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", marginTop: 6 }}>
           {f.id} · {f.category} · {f.affectedHost}
         </div>
         {f.businessImpact && (
           <div style={{ marginTop: 10, padding: "8px 12px", background: `${SEV_COLOR[f.severity]}08`, border: `1px solid ${SEV_COLOR[f.severity]}20`, borderRadius: 5 }}>
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: SEV_COLOR[f.severity] }}>BUSINESS IMPACT</span>
-            <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: "#C8E8F0", marginTop: 4 }}>{f.businessImpact}</div>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: SEV_COLOR[f.severity] }}>BUSINESS IMPACT</span>
+            <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: "var(--adv-text)", marginTop: 4 }}>{f.businessImpact}</div>
           </div>
         )}
       </div>
 
       {/* Workflow buttons */}
-      <div style={{ padding: "10px 20px", borderBottom: "1px solid #1A3A50", display: "flex", gap: 6, flexWrap: "wrap" }}>
-        <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94", alignSelf: "center" }}>ADVANCE:</span>
+      <div style={{ padding: "10px 20px", borderBottom: "1px solid var(--adv-border)", display: "flex", gap: 6, flexWrap: "wrap" }}>
+        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", alignSelf: "center" }}>ADVANCE:</span>
         {WORKFLOW.map((w) => (
           <button
             key={w.status}
@@ -394,10 +394,10 @@ function FindingDetail({ f, onStatusChange }: { f: Finding; onStatusChange: (id:
             disabled={f.status === w.status}
             style={{
               padding: "4px 10px", borderRadius: 4, cursor: f.status === w.status ? "default" : "pointer",
-              border: `1px solid ${f.status === w.status ? "#1A3A50" : `${w.color}50`}`,
+              border: `1px solid ${f.status === w.status ? "#E2E8F0" : `${w.color}50`}`,
               background: f.status === w.status ? "transparent" : `${w.color}10`,
-              color: f.status === w.status ? "#3D7A94" : w.color,
-              fontFamily: "'Share Tech Mono', monospace", fontSize: 10,
+              color: f.status === w.status ? "#64748B" : w.color,
+              fontFamily: "'JetBrains Mono', monospace", fontSize: 10,
               opacity: f.status === w.status ? 0.5 : 1,
             }}
           >
@@ -407,12 +407,12 @@ function FindingDetail({ f, onStatusChange }: { f: Finding; onStatusChange: (id:
       </div>
 
       {/* Tabs */}
-      <div style={{ display: "flex", borderBottom: "1px solid #1A3A50" }}>
+      <div style={{ display: "flex", borderBottom: "1px solid var(--adv-border)" }}>
         {(["overview", "evidence", "remediation", "compliance"] as const).map((t) => (
           <button key={t} onClick={() => setTab(t)} style={{
-            padding: "9px 16px", background: tab === t ? "rgba(0,212,255,0.04)" : "transparent",
-            border: "none", borderBottom: tab === t ? "2px solid #00D4FF" : "2px solid transparent",
-            color: tab === t ? "#C8E8F0" : "#3D7A94", fontFamily: "'Share Tech Mono', monospace",
+            padding: "9px 16px", background: tab === t ? "rgba(37,99,235,0.04)" : "transparent",
+            border: "none", borderBottom: tab === t ? "2px solid #2563EB" : "2px solid transparent",
+            color: tab === t ? "#0F172A" : "#64748B", fontFamily: "'JetBrains Mono', monospace",
             fontSize: 10, letterSpacing: 1, cursor: "pointer", textTransform: "uppercase",
           }}>
             {t === "remediation" ? `Remediation (${Array.isArray(f.remediation) ? f.remediation.length : 0})` : t}
@@ -424,28 +424,28 @@ function FindingDetail({ f, onStatusChange }: { f: Finding; onStatusChange: (id:
         {tab === "overview" && (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
             <div>
-              <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94", marginBottom: 6 }}>DESCRIPTION</div>
-              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: "#C8E8F0", lineHeight: 1.6 }}>{f.description}</div>
-              <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94", marginTop: 12, marginBottom: 6 }}>ATTACK PATH</div>
-              <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#FF9900", lineHeight: 1.8 }}>{f.attackPath}</div>
-              <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94", marginTop: 12, marginBottom: 6 }}>IMPACT</div>
-              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: "#C8E8F0", lineHeight: 1.5 }}>{f.impact}</div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", marginBottom: 6 }}>DESCRIPTION</div>
+              <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, color: "var(--adv-text)", lineHeight: 1.6 }}>{f.description}</div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", marginTop: 12, marginBottom: 6 }}>ATTACK PATH</div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#FF9900", lineHeight: 1.8 }}>{f.attackPath}</div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", marginTop: 12, marginBottom: 6 }}>IMPACT</div>
+              <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: "var(--adv-text)", lineHeight: 1.5 }}>{f.impact}</div>
             </div>
             <div>
-              <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94", marginBottom: 6 }}>TECHNICAL DETAILS</div>
-              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: "#C8E8F0", lineHeight: 1.6 }}>{f.technicalDetails}</div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", marginBottom: 6 }}>TECHNICAL DETAILS</div>
+              <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: "var(--adv-text)", lineHeight: 1.6 }}>{f.technicalDetails}</div>
               <div style={{ marginTop: 12 }}>
-                <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94", marginBottom: 6 }}>MITRE ATT&CK</div>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", marginBottom: 6 }}>MITRE ATT&CK</div>
                 {f.mitre.map((m) => (
                   <div key={m.id} style={{ display: "flex", gap: 8, marginBottom: 4 }}>
-                    <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#00D4FF" }}>{m.id}</span>
-                    <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: "#3D7A94" }}>{m.name}</span>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-accent)" }}>{m.id}</span>
+                    <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: "var(--adv-text-muted)" }}>{m.name}</span>
                   </div>
                 ))}
               </div>
               <div style={{ marginTop: 12 }}>
-                <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94", marginBottom: 6 }}>CVSS VECTOR</div>
-                <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#C8E8F0", background: "#050A0E", padding: "6px 10px", borderRadius: 4, wordBreak: "break-all" }}>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", marginBottom: 6 }}>CVSS VECTOR</div>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text)", background: "var(--adv-bg)", padding: "6px 10px", borderRadius: 4, wordBreak: "break-all" }}>
                   {f.cvssVector}
                 </div>
               </div>
@@ -456,12 +456,12 @@ function FindingDetail({ f, onStatusChange }: { f: Finding; onStatusChange: (id:
         {tab === "evidence" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {f.evidence.map((e, i) => (
-              <div key={i} style={{ background: "#050A0E", border: "1px solid #1A3A50", borderRadius: 6, overflow: "hidden" }}>
-                <div style={{ padding: "8px 12px", borderBottom: "1px solid #1A3A50", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94" }}>{e.label}</span>
+              <div key={i} style={{ background: "var(--adv-bg)", border: "1px solid var(--adv-border)", borderRadius: 6, overflow: "hidden" }}>
+                <div style={{ padding: "8px 12px", borderBottom: "1px solid var(--adv-border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)" }}>{e.label}</span>
                   <CopyBtn text={e.content} />
                 </div>
-                <pre style={{ margin: 0, padding: "12px", fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#C8E8F0", whiteSpace: "pre-wrap", wordBreak: "break-word", lineHeight: 1.6, maxHeight: 250, overflow: "auto" }}>
+                <pre style={{ margin: 0, padding: "12px", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--adv-text)", whiteSpace: "pre-wrap", wordBreak: "break-word", lineHeight: 1.6, maxHeight: 250, overflow: "auto" }}>
                   {e.content}
                 </pre>
               </div>
@@ -472,10 +472,10 @@ function FindingDetail({ f, onStatusChange }: { f: Finding; onStatusChange: (id:
         {tab === "remediation" && (
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-              <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94" }}>
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)" }}>
                 {Array.isArray(f.remediation) ? f.remediation.filter((s) => typeof s !== "string" && s.completed).length : 0} / {f.remediation.length} steps completed
               </span>
-              <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#FFD600" }}>
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#FFD600" }}>
                 ~{Array.isArray(f.remediation) ? f.remediation.reduce((a, s) => a + (typeof s !== "string" ? s.estimatedHours : 1), 0) : 0}h estimated
               </span>
             </div>
@@ -486,11 +486,11 @@ function FindingDetail({ f, onStatusChange }: { f: Finding; onStatusChange: (id:
         {tab === "compliance" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {f.compliance.map((c, i) => (
-              <div key={i} style={{ background: "#050A0E", border: "1px solid #1A3A50", borderRadius: 6, padding: "10px 14px" }}>
-                <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#00D4FF", marginBottom: 8 }}>{c.framework}</div>
+              <div key={i} style={{ background: "var(--adv-bg)", border: "1px solid var(--adv-border)", borderRadius: 6, padding: "10px 14px" }}>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--adv-accent)", marginBottom: 8 }}>{c.framework}</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
                   {c.refs.map((r, j) => (
-                    <div key={j} style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: "#C8E8F0", lineHeight: 1.4 }}>· {r}</div>
+                    <div key={j} style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: "var(--adv-text)", lineHeight: 1.4 }}>· {r}</div>
                   ))}
                 </div>
               </div>
@@ -550,7 +550,7 @@ export default function FindingsPage() {
       statusItems={[
         { label: "CRITICAL OPEN", value: String(stats.critical), color: "#FF1744" },
         { label: "HIGH OPEN",     value: String(stats.high),     color: "#FF6D00" },
-        { label: "REMEDIATED",    value: String(stats.verified),  color: "#00FF88" },
+        { label: "REMEDIATED",    value: String(stats.verified),  color: "#059669" },
       ]}
     >
       <div style={{ display: "grid", gridTemplateColumns: selectedId ? "360px 1fr" : "1fr", gap: 16 }}>
@@ -564,44 +564,44 @@ export default function FindingsPage() {
               { label: "CRITICAL",   value: findings.filter((f) => f.severity === "CRITICAL").length, color: "#FF1744" },
               { label: "HIGH",       value: findings.filter((f) => f.severity === "HIGH").length,     color: "#FF6D00" },
               { label: "OPEN",       value: stats.open,     color: "#FF9900" },
-              { label: "VERIFIED",   value: stats.verified, color: "#00FF88" },
+              { label: "VERIFIED",   value: stats.verified, color: "#059669" },
             ].map((m) => (
-              <div key={m.label} className="animate-fade-up" style={{ background: "#0D1B26", border: "1px solid #1A3A50", borderRadius: 6, padding: "10px 12px", textAlign: "center" }}>
-                <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 22, fontWeight: 700, color: m.color }}>{m.value}</div>
-                <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#3D7A94", marginTop: 2 }}>{m.label}</div>
+              <div key={m.label} className="animate-fade-up" style={{ background: "linear-gradient(160deg, rgba(37,99,235,0.05) 0%, #FFFFFF 55%)", border: "1px solid var(--adv-border)", borderRadius: 6, padding: "10px 12px", textAlign: "center" }}>
+                <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 22, fontWeight: 700, color: m.color }}>{m.value}</div>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", marginTop: 2 }}>{m.label}</div>
               </div>
             ))}
           </div>
 
           {/* Filters */}
-          <div style={{ background: "#0D1B26", border: "1px solid #1A3A50", borderRadius: 6, padding: "10px 12px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, background: "#050A0E", border: "1px solid #1A3A50", borderRadius: 4, padding: "5px 10px" }}>
-              <Search size={11} color="#3D7A94" />
+          <div style={{ background: "linear-gradient(160deg, rgba(37,99,235,0.05) 0%, #FFFFFF 55%)", border: "1px solid var(--adv-border)", borderRadius: 6, padding: "10px 12px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, background: "var(--adv-bg)", border: "1px solid var(--adv-border)", borderRadius: 4, padding: "5px 10px" }}>
+              <Search size={11} color="#64748B" />
               <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search findings..."
-                style={{ background: "none", border: "none", outline: "none", color: "#C8E8F0", fontFamily: "'Share Tech Mono', monospace", fontSize: 11, width: "100%" }}
+                style={{ background: "none", border: "none", outline: "none", color: "var(--adv-text)", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, width: "100%" }}
               />
             </div>
             <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
               {(["ALL", "CRITICAL", "HIGH", "MEDIUM", "LOW"] as const).map((s) => (
                 <button key={s} onClick={() => setFilterSev(s)} style={{
-                  padding: "3px 8px", borderRadius: 3, cursor: "pointer", fontFamily: "'Share Tech Mono', monospace", fontSize: 9,
-                  border: `1px solid ${filterSev === s ? (s === "ALL" ? "#00D4FF" : SEV_COLOR[s as Severity]) : "#1A3A50"}`,
-                  background: filterSev === s ? (s === "ALL" ? "rgba(0,212,255,0.1)" : `${SEV_COLOR[s as Severity]}15`) : "transparent",
-                  color: filterSev === s ? (s === "ALL" ? "#00D4FF" : SEV_COLOR[s as Severity]) : "#3D7A94",
+                  padding: "3px 8px", borderRadius: 3, cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 9,
+                  border: `1px solid ${filterSev === s ? (s === "ALL" ? "#2563EB" : SEV_COLOR[s as Severity]) : "#E2E8F0"}`,
+                  background: filterSev === s ? (s === "ALL" ? "rgba(37,99,235,0.1)" : `${SEV_COLOR[s as Severity]}15`) : "transparent",
+                  color: filterSev === s ? (s === "ALL" ? "#2563EB" : SEV_COLOR[s as Severity]) : "#64748B",
                 }}>{s}</button>
               ))}
             </div>
             <div style={{ display: "flex", gap: 6, marginTop: 6, alignItems: "center" }}>
               <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as FindingStatus | "ALL")}
-                style={{ background: "#050A0E", border: "1px solid #1A3A50", borderRadius: 4, color: "#3D7A94", fontFamily: "'Share Tech Mono', monospace", fontSize: 10, padding: "3px 6px", outline: "none" }}>
+                style={{ background: "var(--adv-bg)", border: "1px solid var(--adv-border)", borderRadius: 4, color: "var(--adv-text-muted)", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, padding: "3px 6px", outline: "none" }}>
                 {["ALL", "OPEN", "IN_REVIEW", "IN_REMEDIATION", "VERIFIED", "CLOSED", "ACCEPTED", "FALSE_POSITIVE"].map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
               <select value={filterCat} onChange={(e) => setFilterCat(e.target.value)}
-                style={{ background: "#050A0E", border: "1px solid #1A3A50", borderRadius: 4, color: "#3D7A94", fontFamily: "'Share Tech Mono', monospace", fontSize: 10, padding: "3px 6px", outline: "none" }}>
+                style={{ background: "var(--adv-bg)", border: "1px solid var(--adv-border)", borderRadius: 4, color: "var(--adv-text-muted)", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, padding: "3px 6px", outline: "none" }}>
                 {categories.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
               <button onClick={() => setSortBy(sortBy === "cvss" ? "date" : sortBy === "date" ? "status" : "cvss")}
-                style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 8px", background: "transparent", border: "1px solid #1A3A50", borderRadius: 4, color: "#3D7A94", cursor: "pointer", fontFamily: "'Share Tech Mono', monospace", fontSize: 9 }}>
+                style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 8px", background: "transparent", border: "1px solid var(--adv-border)", borderRadius: 4, color: "var(--adv-text-muted)", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 9 }}>
                 <ArrowUpDown size={10} /> {sortBy.toUpperCase()}
               </button>
             </div>
@@ -618,8 +618,8 @@ export default function FindingsPage() {
                   className="card-hover stagger-item"
                   onClick={() => setSelectedId(isSelected ? null : f.id)}
                   style={{
-                    background: isSelected ? "rgba(0,212,255,0.04)" : "#0D1B26",
-                    border: `1px solid ${isSelected ? "#00D4FF" : "#1A3A50"}`,
+                    background: isSelected ? "rgba(37,99,235,0.04)" : "#FFFFFF",
+                    border: `1px solid ${isSelected ? "#2563EB" : "#E2E8F0"}`,
                     borderLeft: `3px solid ${SEV_COLOR[f.severity]}`,
                     borderRadius: 6, padding: "10px 12px", cursor: "pointer",
                   }}
@@ -628,19 +628,19 @@ export default function FindingsPage() {
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap", flex: 1 }}>
                       <SevBadge s={f.severity} />
                       <StatusBadge s={f.status} />
-                      <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#3D7A94" }}>{f.id}</span>
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)" }}>{f.id}</span>
                     </div>
-                    <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: sla.color }}>{sla.label}</span>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: sla.color }}>{sla.label}</span>
                   </div>
-                  <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, fontWeight: 600, color: "#C8E8F0", lineHeight: 1.3, marginBottom: 4 }}>
+                  <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600, color: "var(--adv-text)", lineHeight: 1.3, marginBottom: 4 }}>
                     {f.title}
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#3D7A94" }}>{f.affectedHost}</span>
-                    <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#FF6D00" }}>CVSS {f.cvss}</span>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)" }}>{f.affectedHost}</span>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "#FF6D00" }}>CVSS {f.cvss}</span>
                   </div>
                   {/* SLA mini-bar */}
-                  <div style={{ height: 2, background: "#1A3A50", borderRadius: 1, marginTop: 6, overflow: "hidden" }}>
+                  <div style={{ height: 2, background: "#E2E8F0", borderRadius: 1, marginTop: 6, overflow: "hidden" }}>
                     <div className="progress-bar-fill" style={{ height: "100%", width: `${sla.pct}%`, background: sla.color, borderRadius: 1 }} />
                   </div>
                 </div>
@@ -648,7 +648,7 @@ export default function FindingsPage() {
             })}
 
             {filtered.length === 0 && (
-              <div style={{ textAlign: "center", padding: 32, color: "#3D7A94", fontFamily: "'Share Tech Mono', monospace", fontSize: 11 }}>
+              <div style={{ textAlign: "center", padding: 32, color: "var(--adv-text-muted)", fontFamily: "'JetBrains Mono', monospace", fontSize: 11 }}>
                 No findings match the current filters.
               </div>
             )}

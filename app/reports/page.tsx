@@ -522,10 +522,10 @@ const frameworks: ComplianceFrameworkData[] = [
 
 /* ─── Helpers ─── */
 function statusColor(s: ComplianceControl["status"]) {
-  if (s === "COMPLIANT")      return "#00FF88";
+  if (s === "COMPLIANT")      return "#059669";
   if (s === "PARTIAL")        return "#FF9900";
   if (s === "GAP")            return "#FF4444";
-  return "#3D7A94";
+  return "#64748B";
 }
 
 function statusLabel(s: ComplianceControl["status"]) {
@@ -539,7 +539,7 @@ function prioColor(p: ComplianceControl["remediationPriority"]) {
   if (p === "CRITICAL") return "#FF4444";
   if (p === "HIGH")     return "#FF9900";
   if (p === "MEDIUM")   return "#FFD500";
-  return "#3D7A94";
+  return "#64748B";
 }
 
 /* ─── Executive Summary Content ─── */
@@ -547,11 +547,11 @@ function ExecutiveSummary() {
   return (
     <div style={{ maxWidth: 860 }}>
       <div style={{ marginBottom: 24 }}>
-        <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94", letterSpacing: 2, marginBottom: 8 }}>EXECUTIVE SUMMARY</div>
-        <h2 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 22, color: "#C8E8F0", margin: "0 0 8px 0" }}>
+        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", letterSpacing: 2, marginBottom: 8 }}>EXECUTIVE SUMMARY</div>
+        <h2 style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 22, color: "var(--adv-text)", margin: "0 0 8px 0" }}>
           Internal Network Vulnerability Assessment & Penetration Test
         </h2>
-        <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#3D7A94" }}>
+        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--adv-text-muted)" }}>
           Client: Acme Corporation Ltd. &nbsp;|&nbsp; Engagement Dates: May 10–14, 2026 &nbsp;|&nbsp; Classification: CONFIDENTIAL
         </div>
       </div>
@@ -561,29 +561,29 @@ function ExecutiveSummary() {
           { label: "CRITICAL FINDINGS", value: evidenceStats.critical,        color: "#FF4444" },
           { label: "HIGH FINDINGS",     value: evidenceStats.high,             color: "#FF9900" },
           { label: "EXPLOITED PATHS",   value: evidenceStats.exploitedPaths,   color: "#FF4444" },
-          { label: "HOSTS IN SCOPE",    value: evidenceStats.scopeHosts,       color: "#00D4FF" },
-          { label: "EVIDENCE ITEMS",    value: evidenceStats.evidenceArtifacts, color: "#C8E8F0" },
-          { label: "AVG CONFIDENCE",    value: `${evidenceStats.avgConfidence}%`, color: "#00FF88" },
+          { label: "HOSTS IN SCOPE",    value: evidenceStats.scopeHosts,       color: "var(--adv-accent)" },
+          { label: "EVIDENCE ITEMS",    value: evidenceStats.evidenceArtifacts, color: "var(--adv-text)" },
+          { label: "AVG CONFIDENCE",    value: `${evidenceStats.avgConfidence}%`, color: "#059669" },
         ].map((s) => (
-          <div key={s.label} style={{ background: "#0D1B26", border: "1px solid #1A3A50", borderRadius: 6, padding: "12px 14px" }}>
-            <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 8.5, color: "#3D7A94", marginBottom: 6, letterSpacing: 1 }}>{s.label}</div>
-            <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 24, fontWeight: 700, color: s.color, lineHeight: 1 }}>{s.value}</div>
+          <div key={s.label} style={{ background: "var(--adv-panel)", border: "1px solid var(--adv-border)", borderRadius: 6, padding: "12px 14px" }}>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 8.5, color: "var(--adv-text-muted)", marginBottom: 6, letterSpacing: 1 }}>{s.label}</div>
+            <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 24, fontWeight: 700, color: s.color, lineHeight: 1 }}>{s.value}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ background: "#0D1B26", border: "1px solid #1A3A50", borderRadius: 6, padding: "16px 20px", marginBottom: 16 }}>
-        <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94", marginBottom: 8, letterSpacing: 1 }}>RISK POSTURE</div>
-        <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: "#C8E8F0", lineHeight: 1.7 }}>
+      <div style={{ background: "var(--adv-panel)", border: "1px solid var(--adv-border)", borderRadius: 6, padding: "16px 20px", marginBottom: 16 }}>
+        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", marginBottom: 8, letterSpacing: 1 }}>RISK POSTURE</div>
+        <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, color: "var(--adv-text)", lineHeight: 1.7 }}>
           The internal network penetration test identified a <span style={{ color: "#FF4444", fontWeight: 700 }}>CRITICAL risk posture</span> across the in-scope environment. Two independent attack paths to full domain compromise were validated, with the primary path requiring only standard domain user credentials and publicly available tooling (Kerberoasting). The domain controller DC01 is configured with unconstrained Kerberos delegation — meaning any user who authenticates to a service on DC01 exposes their Ticket Granting Ticket, which can be extracted for persistent, privileged access.
         </div>
-        <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: "#C8E8F0", lineHeight: 1.7, marginTop: 8 }}>
+        <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, color: "var(--adv-text)", lineHeight: 1.7, marginTop: 8 }}>
           Network segmentation between the CORP and MGMT zones is technically ineffective — CORP-zone hosts can reach management infrastructure without passing through enforced controls. Detection coverage for the identified attack techniques is estimated at <span style={{ color: "#FF9900", fontWeight: 700 }}>54% overall</span>, meaning a skilled threat actor could achieve domain compromise without triggering a single alert in the current security stack.
         </div>
       </div>
 
-      <div style={{ background: "#0D1B26", border: "1px solid #FF444430", borderRadius: 6, padding: "14px 18px", marginBottom: 16 }}>
-        <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#FF4444", marginBottom: 10, letterSpacing: 1 }}>TOP 5 CRITICAL FINDINGS — IMMEDIATE ACTION REQUIRED</div>
+      <div style={{ background: "var(--adv-panel)", border: "1px solid #FF444430", borderRadius: 6, padding: "14px 18px", marginBottom: 16 }}>
+        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#FF4444", marginBottom: 10, letterSpacing: 1 }}>TOP 5 CRITICAL FINDINGS — IMMEDIATE ACTION REQUIRED</div>
         {[
           { id: "VAPT-CRIT-001", title: "Unconstrained Kerberos Delegation on DC01",                cvss: "9.8", action: "Disable delegation, enable Protected Users, deploy Credential Guard" },
           { id: "VAPT-CRIT-002", title: "Kerberoastable DA Service Account (svc_backup)",          cvss: "9.1", action: "Remove from Domain Admins, deploy gMSA, enforce AES256 encryption" },
@@ -591,13 +591,13 @@ function ExecutiveSummary() {
           { id: "VAPT-HIGH-002", title: "WMI Lateral Movement — 18 Hosts Compromised",            cvss: "7.5", action: "Block WMI via FW rules, deploy LAPS, enable process auditing" },
           { id: "VAPT-MED-001",  title: "CORP→MGMT Segmentation Bypass (VLAN Bypass)",            cvss: "6.4", action: "Apply DENY ACL on MGMT ingress for all non-jumphost CORP sources" },
         ].map((f, i) => (
-          <div key={f.id} style={{ display: "flex", gap: 12, padding: "8px 0", borderBottom: i < 4 ? "1px solid rgba(26,58,80,0.3)" : "none", alignItems: "flex-start" }}>
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#00D4FF", flexShrink: 0, width: 110 }}>{f.id}</span>
+          <div key={f.id} style={{ display: "flex", gap: 12, padding: "8px 0", borderBottom: i < 4 ? "1px solid rgba(37,99,235,0.06)" : "none", alignItems: "flex-start" }}>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-accent)", flexShrink: 0, width: 110 }}>{f.id}</span>
             <div style={{ flex: 1 }}>
-              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: "#C8E8F0", fontWeight: 500 }}>{f.title}</div>
-              <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94", marginTop: 2 }}>Action: {f.action}</div>
+              <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: "var(--adv-text)", fontWeight: 500 }}>{f.title}</div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", marginTop: 2 }}>Action: {f.action}</div>
             </div>
-            <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, fontWeight: 700, color: parseFloat(f.cvss) >= 9 ? "#FF4444" : "#FF9900", flexShrink: 0 }}>CVSS {f.cvss}</span>
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 700, color: parseFloat(f.cvss) >= 9 ? "#FF4444" : "#FF9900", flexShrink: 0 }}>CVSS {f.cvss}</span>
           </div>
         ))}
       </div>
@@ -615,9 +615,9 @@ function ComplianceReport({ framework, setFramework }: { framework: ComplianceFr
     <div>
       {/* Framework Tabs */}
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 20 }}>
-        <button onClick={() => setFramework("ALL")} style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, padding: "4px 12px", borderRadius: 4, border: "1px solid", borderColor: framework === "ALL" ? "#00D4FF" : "#1A3A50", background: framework === "ALL" ? "rgba(0,212,255,0.08)" : "transparent", color: framework === "ALL" ? "#00D4FF" : "#3D7A94", cursor: "pointer" }}>ALL FRAMEWORKS</button>
+        <button onClick={() => setFramework("ALL")} style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, padding: "4px 12px", borderRadius: 4, border: "1px solid", borderColor: framework === "ALL" ? "#2563EB" : "#E2E8F0", background: framework === "ALL" ? "rgba(37,99,235,0.08)" : "transparent", color: framework === "ALL" ? "#2563EB" : "#64748B", cursor: "pointer" }}>ALL FRAMEWORKS</button>
         {frameworks.map((f) => (
-          <button key={f.id} onClick={() => setFramework(f.id)} style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, padding: "4px 12px", borderRadius: 4, border: "1px solid", borderColor: framework === f.id ? "#00D4FF" : "#1A3A50", background: framework === f.id ? "rgba(0,212,255,0.08)" : "transparent", color: framework === f.id ? "#00D4FF" : "#3D7A94", cursor: "pointer" }}>{f.shortName}</button>
+          <button key={f.id} onClick={() => setFramework(f.id)} style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, padding: "4px 12px", borderRadius: 4, border: "1px solid", borderColor: framework === f.id ? "#2563EB" : "#E2E8F0", background: framework === f.id ? "rgba(37,99,235,0.08)" : "transparent", color: framework === f.id ? "#2563EB" : "#64748B", cursor: "pointer" }}>{f.shortName}</button>
         ))}
       </div>
 
@@ -627,19 +627,19 @@ function ComplianceReport({ framework, setFramework }: { framework: ComplianceFr
           {frameworks.map((fw) => {
             const pct = Math.round(((fw.compliant + fw.partial * 0.5) / fw.totalControls) * 100);
             return (
-              <div key={fw.id} onClick={() => setFramework(fw.id)} style={{ background: "#0D1B26", border: "1px solid #1A3A50", borderRadius: 6, padding: "14px 16px", cursor: "pointer", transition: "border-color 0.15s" }}>
-                <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#C8E8F0", marginBottom: 4 }}>{fw.name}</div>
-                <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#3D7A94", marginBottom: 10 }}>{fw.version.slice(0, 50)}…</div>
+              <div key={fw.id} onClick={() => setFramework(fw.id)} style={{ background: "var(--adv-panel)", border: "1px solid var(--adv-border)", borderRadius: 6, padding: "14px 16px", cursor: "pointer", transition: "border-color 0.15s" }}>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--adv-text)", marginBottom: 4 }}>{fw.name}</div>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", marginBottom: 10 }}>{fw.version.slice(0, 50)}…</div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                  <div style={{ flex: 1, height: 5, background: "rgba(26,58,80,0.5)", borderRadius: 3, overflow: "hidden" }}>
-                    <div style={{ height: "100%", width: `${pct}%`, background: pct >= 70 ? "#00FF88" : pct >= 50 ? "#FF9900" : "#FF4444" }} />
+                  <div style={{ flex: 1, height: 5, background: "rgba(37,99,235,0.06)", borderRadius: 3, overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${pct}%`, background: pct >= 70 ? "#059669" : pct >= 50 ? "#FF9900" : "#FF4444" }} />
                   </div>
-                  <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, fontWeight: 700, color: pct >= 70 ? "#00FF88" : pct >= 50 ? "#FF9900" : "#FF4444" }}>{pct}%</span>
+                  <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 700, color: pct >= 70 ? "#059669" : pct >= 50 ? "#FF9900" : "#FF4444" }}>{pct}%</span>
                 </div>
                 <div style={{ display: "flex", gap: 12 }}>
-                  <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#00FF88" }}>✓ {fw.compliant}</span>
-                  <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#FF9900" }}>~ {fw.partial}</span>
-                  <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#FF4444" }}>✗ {fw.gap}</span>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "#059669" }}>✓ {fw.compliant}</span>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "#FF9900" }}>~ {fw.partial}</span>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "#FF4444" }}>✗ {fw.gap}</span>
                 </div>
               </div>
             );
@@ -651,8 +651,8 @@ function ComplianceReport({ framework, setFramework }: { framework: ComplianceFr
       {activeFrameworks.map((fw) => (
         <div key={fw.id} style={{ marginBottom: 32 }}>
           <div style={{ marginBottom: 14 }}>
-            <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 13, color: "#00D4FF", marginBottom: 2 }}>{fw.name}</div>
-            <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94" }}>{fw.version}</div>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: "var(--adv-accent)", marginBottom: 2 }}>{fw.name}</div>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)" }}>{fw.version}</div>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -662,8 +662,8 @@ function ComplianceReport({ framework, setFramework }: { framework: ComplianceFr
                 <div
                   key={ctrl.controlId}
                   style={{
-                    background: "#0D1B26",
-                    border: "1px solid #1A3A50",
+                    background: "var(--adv-panel)",
+                    border: "1px solid var(--adv-border)",
                     borderLeft: `3px solid ${statusColor(ctrl.status)}`,
                     borderRadius: 4,
                     overflow: "hidden",
@@ -673,32 +673,32 @@ function ComplianceReport({ framework, setFramework }: { framework: ComplianceFr
                     onClick={() => setExpandedControl(isExpanded ? null : `${fw.id}-${ctrl.controlId}`)}
                     style={{ padding: "10px 14px", cursor: "pointer", display: "flex", alignItems: "center", gap: 10 }}
                   >
-                    {isExpanded ? <ChevronDown size={13} color="#00D4FF" /> : <ChevronRight size={13} color="#3D7A94" />}
-                    <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#00D4FF", width: 130, flexShrink: 0 }}>{ctrl.controlId}</span>
-                    <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: "#C8E8F0", flex: 1, fontWeight: 500 }}>{ctrl.controlName}</span>
+                    {isExpanded ? <ChevronDown size={13} color="#2563EB" /> : <ChevronRight size={13} color="#64748B" />}
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-accent)", width: 130, flexShrink: 0 }}>{ctrl.controlId}</span>
+                    <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: "var(--adv-text)", flex: 1, fontWeight: 500 }}>{ctrl.controlName}</span>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                       {ctrl.findingRefs.length > 0 && (
                         <div style={{ display: "flex", gap: 4 }}>
                           {ctrl.findingRefs.map((ref) => (
-                            <span key={ref} style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 8, color: "#FF4444", padding: "1px 4px", border: "1px solid #FF444440", borderRadius: 2 }}>{ref}</span>
+                            <span key={ref} style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 8, color: "#FF4444", padding: "1px 4px", border: "1px solid #FF444440", borderRadius: 2 }}>{ref}</span>
                           ))}
                         </div>
                       )}
-                      <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: prioColor(ctrl.remediationPriority), width: 55, textAlign: "right" }}>{ctrl.remediationPriority}</span>
-                      <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: statusColor(ctrl.status), padding: "2px 6px", background: `${statusColor(ctrl.status)}20`, borderRadius: 3, width: 80, textAlign: "center" }}>{statusLabel(ctrl.status)}</span>
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: prioColor(ctrl.remediationPriority), width: 55, textAlign: "right" }}>{ctrl.remediationPriority}</span>
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: statusColor(ctrl.status), padding: "2px 6px", background: `${statusColor(ctrl.status)}20`, borderRadius: 3, width: 80, textAlign: "center" }}>{statusLabel(ctrl.status)}</span>
                     </div>
                   </div>
 
                   {isExpanded && (
-                    <div style={{ padding: "0 14px 14px 37px", borderTop: "1px solid #1A3A50" }}>
+                    <div style={{ padding: "0 14px 14px 37px", borderTop: "1px solid var(--adv-border)" }}>
                       <div style={{ paddingTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
                         <div>
-                          <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#3D7A94", marginBottom: 4, letterSpacing: 1 }}>REQUIREMENT</div>
-                          <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: "#C8E8F0", lineHeight: 1.6, padding: "8px 12px", background: "#050A0E", borderRadius: 3, border: "1px solid #1A3A50" }}>{ctrl.requirement}</div>
+                          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", marginBottom: 4, letterSpacing: 1 }}>REQUIREMENT</div>
+                          <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: "var(--adv-text)", lineHeight: 1.6, padding: "8px 12px", background: "var(--adv-bg)", borderRadius: 3, border: "1px solid var(--adv-border)" }}>{ctrl.requirement}</div>
                         </div>
                         <div>
-                          <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#3D7A94", marginBottom: 4, letterSpacing: 1 }}>ASSESSMENT EVIDENCE</div>
-                          <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#C8E8F0", lineHeight: 1.6, padding: "8px 12px", background: "#050A0E", borderRadius: 3, border: `1px solid ${statusColor(ctrl.status)}30` }}>{ctrl.evidenceSummary}</div>
+                          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", marginBottom: 4, letterSpacing: 1 }}>ASSESSMENT EVIDENCE</div>
+                          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--adv-text)", lineHeight: 1.6, padding: "8px 12px", background: "var(--adv-bg)", borderRadius: 3, border: `1px solid ${statusColor(ctrl.status)}30` }}>{ctrl.evidenceSummary}</div>
                         </div>
                       </div>
                     </div>
@@ -719,45 +719,45 @@ function EvidenceSummary() {
     <div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, marginBottom: 24 }}>
         {[
-          { label: "TOTAL FINDINGS",        value: evidenceStats.totalFindings,      color: "#C8E8F0" },
-          { label: "EVIDENCE ARTIFACTS",    value: evidenceStats.evidenceArtifacts,  color: "#00D4FF" },
-          { label: "COMMAND OUTPUTS",       value: evidenceStats.commandOutputs,     color: "#00D4FF" },
-          { label: "SCREENSHOTS",           value: evidenceStats.screenshotsCount,   color: "#00D4FF" },
-          { label: "AVG CONFIDENCE",        value: `${evidenceStats.avgConfidence}%`,color: "#00FF88" },
-          { label: "SCOPE (HOSTS)",         value: evidenceStats.scopeHosts,         color: "#C8E8F0" },
-          { label: "ENGAGEMENT (DAYS)",     value: evidenceStats.engagementDays,     color: "#C8E8F0" },
+          { label: "TOTAL FINDINGS",        value: evidenceStats.totalFindings,      color: "var(--adv-text)" },
+          { label: "EVIDENCE ARTIFACTS",    value: evidenceStats.evidenceArtifacts,  color: "var(--adv-accent)" },
+          { label: "COMMAND OUTPUTS",       value: evidenceStats.commandOutputs,     color: "var(--adv-accent)" },
+          { label: "SCREENSHOTS",           value: evidenceStats.screenshotsCount,   color: "var(--adv-accent)" },
+          { label: "AVG CONFIDENCE",        value: `${evidenceStats.avgConfidence}%`,color: "#059669" },
+          { label: "SCOPE (HOSTS)",         value: evidenceStats.scopeHosts,         color: "var(--adv-text)" },
+          { label: "ENGAGEMENT (DAYS)",     value: evidenceStats.engagementDays,     color: "var(--adv-text)" },
           { label: "OPEN FINDINGS",         value: evidenceStats.openCount,          color: "#FF4444" },
         ].map((s) => (
-          <div key={s.label} style={{ background: "#0D1B26", border: "1px solid #1A3A50", borderRadius: 6, padding: "14px 16px" }}>
-            <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#3D7A94", marginBottom: 6, letterSpacing: 1 }}>{s.label}</div>
-            <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 24, fontWeight: 700, color: s.color, lineHeight: 1 }}>{s.value}</div>
+          <div key={s.label} style={{ background: "var(--adv-panel)", border: "1px solid var(--adv-border)", borderRadius: 6, padding: "14px 16px" }}>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", marginBottom: 6, letterSpacing: 1 }}>{s.label}</div>
+            <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 24, fontWeight: 700, color: s.color, lineHeight: 1 }}>{s.value}</div>
           </div>
         ))}
       </div>
 
       {/* Severity Distribution */}
-      <div style={{ background: "#0D1B26", border: "1px solid #1A3A50", borderRadius: 6, padding: "16px 20px", marginBottom: 16 }}>
-        <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#C8E8F0", marginBottom: 14, letterSpacing: 1 }}>FINDING DISTRIBUTION BY SEVERITY</div>
+      <div style={{ background: "var(--adv-panel)", border: "1px solid var(--adv-border)", borderRadius: 6, padding: "16px 20px", marginBottom: 16 }}>
+        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--adv-text)", marginBottom: 14, letterSpacing: 1 }}>FINDING DISTRIBUTION BY SEVERITY</div>
         {[
           { label: "CRITICAL", value: evidenceStats.critical, total: evidenceStats.totalFindings, color: "#FF4444" },
           { label: "HIGH",     value: evidenceStats.high,     total: evidenceStats.totalFindings, color: "#FF9900" },
           { label: "MEDIUM",   value: evidenceStats.medium,   total: evidenceStats.totalFindings, color: "#FFD500" },
-          { label: "LOW",      value: evidenceStats.low,      total: evidenceStats.totalFindings, color: "#00D4FF" },
+          { label: "LOW",      value: evidenceStats.low,      total: evidenceStats.totalFindings, color: "var(--adv-accent)" },
         ].map((row) => (
           <div key={row.label} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: row.color, width: 70, flexShrink: 0 }}>{row.label}</span>
-            <div style={{ flex: 1, height: 8, background: "rgba(26,58,80,0.4)", borderRadius: 4, overflow: "hidden" }}>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: row.color, width: 70, flexShrink: 0 }}>{row.label}</span>
+            <div style={{ flex: 1, height: 8, background: "rgba(37,99,235,0.06)", borderRadius: 4, overflow: "hidden" }}>
               <div style={{ height: "100%", width: `${(row.value / row.total) * 100}%`, background: row.color, borderRadius: 4 }} />
             </div>
-            <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, fontWeight: 700, color: row.color, width: 20 }}>{row.value}</span>
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#3D7A94", width: 40 }}>{Math.round((row.value / row.total) * 100)}%</span>
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 700, color: row.color, width: 20 }}>{row.value}</span>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", width: 40 }}>{Math.round((row.value / row.total) * 100)}%</span>
           </div>
         ))}
       </div>
 
       {/* Scope */}
-      <div style={{ background: "#0D1B26", border: "1px solid #1A3A50", borderRadius: 6, padding: "14px 18px" }}>
-        <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#C8E8F0", marginBottom: 10, letterSpacing: 1 }}>ENGAGEMENT SCOPE</div>
+      <div style={{ background: "var(--adv-panel)", border: "1px solid var(--adv-border)", borderRadius: 6, padding: "14px 18px" }}>
+        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--adv-text)", marginBottom: 10, letterSpacing: 1 }}>ENGAGEMENT SCOPE</div>
         {[
           { label: "Target Networks",    value: evidenceStats.scopeSubnets },
           { label: "Total Hosts",        value: evidenceStats.scopeHosts.toString() },
@@ -766,9 +766,9 @@ function EvidenceSummary() {
           { label: "Tools Used",         value: "Nmap, Nessus, Responder, Impacket, Mimikatz, BloodHound, CrackMapExec, Hashcat" },
           { label: "Rules of Engagement", value: "No DoS attacks, no data exfiltration, business-hours testing only, pre-approved IPs" },
         ].map((row, i, arr) => (
-          <div key={row.label} style={{ display: "flex", gap: 16, padding: "6px 0", borderBottom: i < arr.length - 1 ? "1px solid rgba(26,58,80,0.25)" : "none" }}>
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94", width: 180, flexShrink: 0 }}>{row.label}</span>
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#C8E8F0", lineHeight: 1.5 }}>{row.value}</span>
+          <div key={row.label} style={{ display: "flex", gap: 16, padding: "6px 0", borderBottom: i < arr.length - 1 ? "1px solid rgba(37,99,235,0.06)" : "none" }}>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", width: 180, flexShrink: 0 }}>{row.label}</span>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text)", lineHeight: 1.5 }}>{row.value}</span>
           </div>
         ))}
       </div>
@@ -797,41 +797,41 @@ export default function ReportsPage() {
       style={{
         display: "flex",
         height: "100vh",
-        background: "#050A0E",
-        fontFamily: "'Rajdhani', 'Segoe UI', sans-serif",
+        background: "var(--adv-bg)",
+        fontFamily: "'Inter', sans-serif",
         overflow: "hidden",
       }}
     >
       {sidebarOpen && (
-        <div className="md:hidden" onClick={() => setSidebarOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(5,10,14,0.75)", zIndex: 40 }} />
+        <div className="md:hidden" onClick={() => setSidebarOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.75)", zIndex: 40 }} />
       )}
 
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {/* Header */}
-        <header style={{ height: 52, borderBottom: "1px solid #1A3A50", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px", flexShrink: 0, background: "#050A0E" }}>
+        <header style={{ height: 52, borderBottom: "1px solid var(--adv-border)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px", flexShrink: 0, background: "linear-gradient(90deg, rgba(37,99,235,0.06) 0%, rgba(37,99,235,0.05) 40%, var(--adv-bg) 100%)", boxShadow: "0 1px 0 #CBD5E1, 0 2px 16px rgba(37,99,235,0.06)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <button className="md:hidden" onClick={() => setSidebarOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-              <Menu size={20} color="#00D4FF" />
+              <Menu size={20} color="#2563EB" />
             </button>
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 18, color: "#00D4FF", letterSpacing: 3 }}>ADVERSA</span>
-            <span style={{ color: "#1A3A50" }}>|</span>
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#3D7A94" }}>REPORTS v0.9.1</span>
-            <FileText size={14} color="#00D4FF" style={{ marginLeft: 4 }} />
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 18, color: "var(--adv-accent)", letterSpacing: 3 }}>ADVERSA</span>
+            <span style={{ color: "var(--adv-border)" }}>|</span>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--adv-text-muted)" }}>REPORTS v0.9.1</span>
+            <FileText size={14} color="#2563EB" style={{ marginLeft: 4 }} />
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <button
               onClick={exportPDF}
               className="no-print"
               style={{
-                fontFamily: "'Share Tech Mono', monospace",
+                fontFamily: "'JetBrains Mono', monospace",
                 fontSize: 10,
                 padding: "5px 14px",
                 borderRadius: 4,
-                border: "1px solid #00D4FF",
-                background: "rgba(0,212,255,0.08)",
-                color: "#00D4FF",
+                border: "1px solid #2563EB",
+                background: "rgba(37,99,235,0.08)",
+                color: "var(--adv-accent)",
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
@@ -845,7 +845,7 @@ export default function ReportsPage() {
         </header>
 
         {/* Report type selector */}
-        <div style={{ display: "flex", borderBottom: "1px solid #1A3A50", flexShrink: 0, background: "#050A0E" }}>
+        <div style={{ display: "flex", borderBottom: "1px solid var(--adv-border)", flexShrink: 0, background: "linear-gradient(90deg, rgba(37,99,235,0.06) 0%, rgba(37,99,235,0.05) 40%, var(--adv-bg) 100%)", boxShadow: "0 1px 0 #CBD5E1, 0 2px 16px rgba(37,99,235,0.06)" }}>
           {(["executive", "technical", "compliance", "evidence"] as ReportType[]).map((t) => {
             const labels: Record<ReportType, string> = {
               executive:  "Executive Summary",
@@ -859,11 +859,11 @@ export default function ReportsPage() {
                 onClick={() => setReportType(t)}
                 style={{
                   padding: "11px 22px",
-                  background: reportType === t ? "rgba(0,212,255,0.04)" : "transparent",
+                  background: reportType === t ? "rgba(37,99,235,0.04)" : "transparent",
                   border: "none",
-                  borderBottom: reportType === t ? "2px solid #00D4FF" : "2px solid transparent",
-                  color: reportType === t ? "#C8E8F0" : "#3D7A94",
-                  fontFamily: "'Share Tech Mono', monospace",
+                  borderBottom: reportType === t ? "2px solid #2563EB" : "2px solid transparent",
+                  color: reportType === t ? "#0F172A" : "#64748B",
+                  fontFamily: "'JetBrains Mono', monospace",
                   fontSize: 11,
                   cursor: "pointer",
                   whiteSpace: "nowrap",
@@ -883,33 +883,33 @@ export default function ReportsPage() {
             className="hidden xl:flex"
             style={{
               width: 220,
-              borderRight: "1px solid #1A3A50",
+              borderRight: "1px solid var(--adv-border)",
               flexDirection: "column",
               flexShrink: 0,
               overflow: "hidden",
             }}
           >
-            <div style={{ padding: "12px 14px", borderBottom: "1px solid #1A3A50", fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#C8E8F0", letterSpacing: 1 }}>
+            <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--adv-border)", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text)", letterSpacing: 1 }}>
               REPORT STATS
             </div>
             <div style={{ flex: 1, overflowY: "auto", padding: "8px 0" }}>
               {[
-                { label: "Total Findings", value: evidenceStats.totalFindings, color: "#C8E8F0" },
+                { label: "Total Findings", value: evidenceStats.totalFindings, color: "var(--adv-text)" },
                 { label: "Critical",       value: evidenceStats.critical,       color: "#FF4444" },
                 { label: "High",           value: evidenceStats.high,           color: "#FF9900" },
                 { label: "Medium",         value: evidenceStats.medium,         color: "#FFD500" },
                 { label: "Exploited",      value: evidenceStats.exploitedPaths, color: "#FF4444" },
                 { label: "Open",           value: evidenceStats.openCount,      color: "#FF4444" },
                 { label: "In Progress",    value: evidenceStats.inProgressCount, color: "#FF9900" },
-                { label: "Remediated",     value: evidenceStats.remediatedCount, color: "#00FF88" },
-                { label: "Evidence Items", value: evidenceStats.evidenceArtifacts, color: "#00D4FF" },
-                { label: "Controls Assessed", value: totalControls,            color: "#C8E8F0" },
+                { label: "Remediated",     value: evidenceStats.remediatedCount, color: "#059669" },
+                { label: "Evidence Items", value: evidenceStats.evidenceArtifacts, color: "var(--adv-accent)" },
+                { label: "Controls Assessed", value: totalControls,            color: "var(--adv-text)" },
                 { label: "Compliance Gaps", value: totalGaps,                  color: "#FF4444" },
                 { label: "Partial Comply", value: totalPartial,                color: "#FF9900" },
               ].map((s, i, arr) => (
-                <div key={s.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 14px", borderBottom: i < arr.length - 1 ? "1px solid rgba(26,58,80,0.2)" : "none" }}>
-                  <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94" }}>{s.label}</span>
-                  <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: s.color, fontWeight: 600 }}>{s.value}</span>
+                <div key={s.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 14px", borderBottom: i < arr.length - 1 ? "1px solid rgba(37,99,235,0.06)" : "none" }}>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)" }}>{s.label}</span>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: s.color, fontWeight: 600 }}>{s.value}</span>
                 </div>
               ))}
             </div>
@@ -922,19 +922,19 @@ export default function ReportsPage() {
             {reportType === "evidence"   && <EvidenceSummary />}
             {reportType === "technical"  && (
               <div style={{ maxWidth: 860 }}>
-                <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94", letterSpacing: 2, marginBottom: 14 }}>TECHNICAL FINDINGS REPORT</div>
-                <div style={{ background: "#0D1B26", border: "1px solid #1A3A50", borderRadius: 6, padding: "14px 18px" }}>
-                  <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#00D4FF", marginBottom: 6 }}>FINDINGS DETAIL</div>
-                  <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: "#C8E8F0", lineHeight: 1.6 }}>
-                    Full technical details including command outputs, exploitation evidence, and step-by-step attack paths are documented in the <strong style={{ color: "#00D4FF" }}>Findings</strong> module. Navigate to Findings in the sidebar to view per-finding evidence, CVSS scores, attack paths, and remediation guidance.
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", letterSpacing: 2, marginBottom: 14 }}>TECHNICAL FINDINGS REPORT</div>
+                <div style={{ background: "var(--adv-panel)", border: "1px solid var(--adv-border)", borderRadius: 6, padding: "14px 18px" }}>
+                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--adv-accent)", marginBottom: 6 }}>FINDINGS DETAIL</div>
+                  <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, color: "var(--adv-text)", lineHeight: 1.6 }}>
+                    Full technical details including command outputs, exploitation evidence, and step-by-step attack paths are documented in the <strong style={{ color: "var(--adv-accent)" }}>Findings</strong> module. Navigate to Findings in the sidebar to view per-finding evidence, CVSS scores, attack paths, and remediation guidance.
                   </div>
                   <div style={{ marginTop: 12, display: "flex", gap: 12 }}>
-                    <a href="/findings" style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#00D4FF", textDecoration: "none", padding: "5px 14px", border: "1px solid #00D4FF", borderRadius: 4, background: "rgba(0,212,255,0.08)" }}>
+                    <a href="/findings" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-accent)", textDecoration: "none", padding: "5px 14px", border: "1px solid #2563EB", borderRadius: 4, background: "rgba(37,99,235,0.08)" }}>
                       → OPEN FINDINGS MODULE
                     </a>
                   </div>
                 </div>
-                <div style={{ marginTop: 16, fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94", letterSpacing: 1, marginBottom: 8 }}>FINDING INDEX</div>
+                <div style={{ marginTop: 16, fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", letterSpacing: 1, marginBottom: 8 }}>FINDING INDEX</div>
                 {[
                   { id: "VAPT-CRIT-001", title: "Unconstrained Kerberos Delegation on DC01",     cvss: "9.8", cat: "Active Directory" },
                   { id: "VAPT-CRIT-002", title: "Kerberoastable Service Account → Domain Admin",  cvss: "9.1", cat: "Active Directory" },
@@ -942,11 +942,11 @@ export default function ReportsPage() {
                   { id: "VAPT-HIGH-002", title: "Lateral Movement via WMI (18 hosts)",            cvss: "7.5", cat: "Lateral Movement" },
                   { id: "VAPT-MED-001",  title: "Network Segmentation Bypass CORP→MGMT",         cvss: "6.4", cat: "Segmentation"     },
                 ].map((f, i) => (
-                  <div key={f.id} style={{ display: "flex", gap: 12, padding: "9px 14px", background: "#0D1B26", border: "1px solid #1A3A50", borderRadius: 4, marginBottom: 6, alignItems: "center" }}>
-                    <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#00D4FF", width: 110, flexShrink: 0 }}>{f.id}</span>
-                    <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: "#C8E8F0", flex: 1 }}>{f.title}</span>
-                    <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#3D7A94" }}>{f.cat}</span>
-                    <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, fontWeight: 700, color: parseFloat(f.cvss) >= 9 ? "#FF4444" : "#FF9900" }}>CVSS {f.cvss}</span>
+                  <div key={f.id} style={{ display: "flex", gap: 12, padding: "9px 14px", background: "var(--adv-panel)", border: "1px solid var(--adv-border)", borderRadius: 4, marginBottom: 6, alignItems: "center" }}>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-accent)", width: 110, flexShrink: 0 }}>{f.id}</span>
+                    <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: "var(--adv-text)", flex: 1 }}>{f.title}</span>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)" }}>{f.cat}</span>
+                    <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 700, color: parseFloat(f.cvss) >= 9 ? "#FF4444" : "#FF9900" }}>CVSS {f.cvss}</span>
                   </div>
                 ))}
               </div>
@@ -955,16 +955,16 @@ export default function ReportsPage() {
         </div>
 
         {/* Footer */}
-        <footer style={{ height: 32, borderTop: "1px solid #1A3A50", background: "#0D1B26", display: "flex", alignItems: "center", padding: "0 20px", gap: 16, flexShrink: 0 }}>
-          <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94" }}>FRAMEWORKS: <span style={{ color: "#00D4FF" }}>{frameworks.length}</span></span>
-          <span style={{ color: "#1A3A50" }}>|</span>
-          <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94" }}>CONTROLS: <span style={{ color: "#C8E8F0" }}>{totalControls}</span></span>
-          <span style={{ color: "#1A3A50" }}>|</span>
-          <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94" }}>GAPS: <span style={{ color: "#FF4444" }}>{totalGaps}</span></span>
-          <span style={{ color: "#1A3A50" }}>|</span>
-          <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94" }}>PARTIAL: <span style={{ color: "#FF9900" }}>{totalPartial}</span></span>
-          <span style={{ color: "#1A3A50" }}>|</span>
-          <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94" }}>REPORT DATE: <span style={{ color: "#C8E8F0" }}>2026-05-12</span></span>
+        <footer style={{ height: 32, borderTop: "1px solid var(--adv-border)", background: "linear-gradient(90deg, rgba(37,99,235,0.06) 0%, var(--adv-panel) 60%)", display: "flex", alignItems: "center", padding: "0 20px", gap: 16, flexShrink: 0 }}>
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)" }}>FRAMEWORKS: <span style={{ color: "var(--adv-accent)" }}>{frameworks.length}</span></span>
+          <span style={{ color: "var(--adv-border)" }}>|</span>
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)" }}>CONTROLS: <span style={{ color: "var(--adv-text)" }}>{totalControls}</span></span>
+          <span style={{ color: "var(--adv-border)" }}>|</span>
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)" }}>GAPS: <span style={{ color: "#FF4444" }}>{totalGaps}</span></span>
+          <span style={{ color: "var(--adv-border)" }}>|</span>
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)" }}>PARTIAL: <span style={{ color: "#FF9900" }}>{totalPartial}</span></span>
+          <span style={{ color: "var(--adv-border)" }}>|</span>
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)" }}>REPORT DATE: <span style={{ color: "var(--adv-text)" }}>2026-05-12</span></span>
         </footer>
       </div>
     </div>

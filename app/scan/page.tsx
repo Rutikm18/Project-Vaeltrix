@@ -15,8 +15,8 @@ interface ScanResult { target: string; scanType: string; command: string; startT
 
 /* ─── Scan Profiles ─── */
 const PROFILES: { key: string; label: string; desc: string; time: string; color: string }[] = [
-  { key: "quick",   label: "Quick Scan",       desc: "Top 100 ports, service detection",              time: "~30s",  color: "#00D4FF" },
-  { key: "service", label: "Service Detection", desc: "Common service ports + version fingerprinting", time: "~60s",  color: "#00FF88" },
+  { key: "quick",   label: "Quick Scan",       desc: "Top 100 ports, service detection",              time: "~30s",  color: "var(--adv-accent)" },
+  { key: "service", label: "Service Detection", desc: "Common service ports + version fingerprinting", time: "~60s",  color: "#059669" },
   { key: "full",    label: "Full Port Scan",    desc: "All 65535 ports, scripts, version detection",   time: "5-20m", color: "#FFD600" },
   { key: "os",      label: "OS Detection",      desc: "OS fingerprinting + version detection",         time: "~90s",  color: "#FF9900" },
   { key: "vuln",    label: "Vulnerability",     desc: "NSE vuln scripts on common ports",              time: "2-5m",  color: "#FF6D00" },
@@ -33,15 +33,15 @@ function portRisk(port: number): string {
 }
 
 const RISK_COLOR: Record<string, string> = {
-  CRITICAL: "#FF1744", HIGH: "#FF6D00", INFO: "#3D7A94",
+  CRITICAL: "#FF1744", HIGH: "#FF6D00", INFO: "#64748B",
 };
 
 function HostTypeIcon({ host }: { host: ScanHost }) {
   const label = (host.hostname + host.os).toLowerCase();
-  if (label.includes("windows") || label.includes("dc")) return <Monitor size={14} color="#00D4FF" />;
-  if (label.includes("linux") || label.includes("ubuntu") || label.includes("centos")) return <Server size={14} color="#00FF88" />;
+  if (label.includes("windows") || label.includes("dc")) return <Monitor size={14} color="#2563EB" />;
+  if (label.includes("linux") || label.includes("ubuntu") || label.includes("centos")) return <Server size={14} color="#059669" />;
   if (label.includes("firewall") || label.includes("palo") || label.includes("cisco")) return <Shield size={14} color="#FF9900" />;
-  return <Wifi size={14} color="#3D7A94" />;
+  return <Wifi size={14} color="#64748B" />;
 }
 
 function CopyBtn({ text }: { text: string }) {
@@ -52,7 +52,7 @@ function CopyBtn({ text }: { text: string }) {
     setTimeout(() => setCopied(false), 2000);
   };
   return (
-    <button onClick={copy} style={{ background: "none", border: "none", cursor: "pointer", color: copied ? "#00FF88" : "#3D7A94", padding: "2px 4px" }}>
+    <button onClick={copy} style={{ background: "none", border: "none", cursor: "pointer", color: copied ? "#059669" : "#64748B", padding: "2px 4px" }}>
       {copied ? <Check size={12} /> : <Copy size={12} />}
     </button>
   );
@@ -66,7 +66,7 @@ function HostCard({ host, onExportFinding }: { host: ScanHost; onExportFinding: 
   return (
     <div
       className="card-hover stagger-item"
-      style={{ background: "#0A1520", border: "1px solid #1A3A50", borderRadius: 6, marginBottom: 8, overflow: "hidden" }}
+      style={{ background: "var(--adv-bg)", border: "1px solid var(--adv-border)", borderRadius: 6, marginBottom: 8, overflow: "hidden" }}
     >
       {/* Host header */}
       <div
@@ -76,21 +76,21 @@ function HostCard({ host, onExportFinding }: { host: ScanHost; onExportFinding: 
         <HostTypeIcon host={host} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 13, color: "#00D4FF" }}>{host.ip}</span>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: "var(--adv-accent)" }}>{host.ip}</span>
             {host.hostname !== host.ip && (
-              <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#3D7A94" }}>{host.hostname}</span>
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--adv-text-muted)" }}>{host.hostname}</span>
             )}
             <span style={{
-              fontFamily: "'Share Tech Mono', monospace", fontSize: 9,
-              color: host.state === "up" ? "#00FF88" : "#FF1744",
-              background: host.state === "up" ? "rgba(0,255,136,0.1)" : "rgba(255,23,68,0.1)",
-              border: `1px solid ${host.state === "up" ? "rgba(0,255,136,0.25)" : "rgba(255,23,68,0.25)"}`,
+              fontFamily: "'JetBrains Mono', monospace", fontSize: 9,
+              color: host.state === "up" ? "#059669" : "#FF1744",
+              background: host.state === "up" ? "rgba(5,150,105,0.1)" : "rgba(255,23,68,0.1)",
+              border: `1px solid ${host.state === "up" ? "rgba(5,150,105,0.25)" : "rgba(255,23,68,0.25)"}`,
               borderRadius: 3, padding: "1px 5px",
             }}>
               {host.state.toUpperCase()}
             </span>
           </div>
-          <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: "#3D7A94", marginTop: 2 }}>
+          <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: "var(--adv-text-muted)", marginTop: 2 }}>
             {host.os ? `${host.os}${host.osAccuracy ? ` (${host.osAccuracy}%)` : ""}` : "OS unknown"}
             {host.macVendor ? ` · ${host.macVendor}` : ""}
           </div>
@@ -100,7 +100,7 @@ function HostCard({ host, onExportFinding }: { host: ScanHost; onExportFinding: 
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
           {riskPorts.length > 0 && (
             <span style={{
-              fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#FF1744",
+              fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "#FF1744",
               background: "rgba(255,23,68,0.1)", border: "1px solid rgba(255,23,68,0.25)",
               borderRadius: 3, padding: "1px 6px",
             }}>
@@ -108,24 +108,24 @@ function HostCard({ host, onExportFinding }: { host: ScanHost; onExportFinding: 
             </span>
           )}
           <span style={{
-            fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#00D4FF",
-            background: "rgba(0,212,255,0.1)", border: "1px solid rgba(0,212,255,0.2)",
+            fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-accent)",
+            background: "rgba(37,99,235,0.1)", border: "1px solid rgba(37,99,235,0.2)",
             borderRadius: 3, padding: "1px 6px",
           }}>
             {host.openCount} OPEN
           </span>
-          {expanded ? <ChevronDown size={14} color="#3D7A94" /> : <ChevronRight size={14} color="#3D7A94" />}
+          {expanded ? <ChevronDown size={14} color="#64748B" /> : <ChevronRight size={14} color="#64748B" />}
         </div>
       </div>
 
       {/* Port table */}
       {expanded && host.ports.length > 0 && (
-        <div style={{ borderTop: "1px solid #1A3A50", overflowX: "auto" }}>
+        <div style={{ borderTop: "1px solid var(--adv-border)", overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 500 }}>
             <thead>
-              <tr style={{ background: "#050A0E" }}>
+              <tr style={{ background: "var(--adv-bg)" }}>
                 {["PORT", "STATE", "SERVICE", "VERSION", "RISK", "ACTION"].map((h) => (
-                  <th key={h} style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#3D7A94", padding: "8px 12px", textAlign: "left", borderBottom: "1px solid #1A3A50" }}>
+                  <th key={h} style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", padding: "8px 12px", textAlign: "left", borderBottom: "1px solid var(--adv-border)" }}>
                     {h}
                   </th>
                 ))}
@@ -135,24 +135,24 @@ function HostCard({ host, onExportFinding }: { host: ScanHost; onExportFinding: 
               {host.ports.filter((p) => p.state === "open").map((p, i) => {
                 const risk = portRisk(p.port);
                 return (
-                  <tr key={i} style={{ borderBottom: "1px solid rgba(26,58,80,0.2)" }}>
-                    <td style={{ padding: "8px 12px", fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#00D4FF" }}>
+                  <tr key={i} style={{ borderBottom: "1px solid rgba(37,99,235,0.06)" }}>
+                    <td style={{ padding: "8px 12px", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--adv-accent)" }}>
                       {p.port}/{p.protocol}
                     </td>
                     <td style={{ padding: "8px 12px" }}>
-                      <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#00FF88", background: "rgba(0,255,136,0.08)", borderRadius: 3, padding: "1px 5px" }}>
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "#059669", background: "rgba(5,150,105,0.08)", borderRadius: 3, padding: "1px 5px" }}>
                         {p.state}
                       </span>
                     </td>
-                    <td style={{ padding: "8px 12px", fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#C8E8F0" }}>
+                    <td style={{ padding: "8px 12px", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--adv-text)" }}>
                       {p.service || "—"}
                     </td>
-                    <td style={{ padding: "8px 12px", fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: "#3D7A94", maxWidth: 200 }}>
+                    <td style={{ padding: "8px 12px", fontFamily: "'Inter', sans-serif", fontSize: 12, color: "var(--adv-text-muted)", maxWidth: 200 }}>
                       {[p.product, p.version, p.extrainfo].filter(Boolean).join(" ") || "—"}
                     </td>
                     <td style={{ padding: "8px 12px" }}>
                       {risk !== "INFO" && (
-                        <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: RISK_COLOR[risk], background: `${RISK_COLOR[risk]}15`, border: `1px solid ${RISK_COLOR[risk]}30`, borderRadius: 3, padding: "1px 5px" }}>
+                        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: RISK_COLOR[risk], background: `${RISK_COLOR[risk]}15`, border: `1px solid ${RISK_COLOR[risk]}30`, borderRadius: 3, padding: "1px 5px" }}>
                           {risk}
                         </span>
                       )}
@@ -165,7 +165,7 @@ function HostCard({ host, onExportFinding }: { host: ScanHost; onExportFinding: 
                             display: "flex", alignItems: "center", gap: 4, padding: "3px 8px",
                             background: "rgba(255,23,68,0.08)", border: "1px solid rgba(255,23,68,0.2)",
                             borderRadius: 3, color: "#FF4444", cursor: "pointer",
-                            fontFamily: "'Share Tech Mono', monospace", fontSize: 9,
+                            fontFamily: "'JetBrains Mono', monospace", fontSize: 9,
                           }}
                         >
                           <Plus size={9} /> FINDING
@@ -286,9 +286,9 @@ export default function ScanPage() {
       statusItems={
         result
           ? [
-              { label: "HOSTS UP", value: String(result.upHosts), color: "#00FF88" },
-              { label: "SCANNED", value: String(result.totalHosts), color: "#C8E8F0" },
-              { label: "ELAPSED", value: result.elapsed, color: "#00D4FF" },
+              { label: "HOSTS UP", value: String(result.upHosts), color: "#059669" },
+              { label: "SCANNED", value: String(result.totalHosts), color: "var(--adv-text)" },
+              { label: "ELAPSED", value: result.elapsed, color: "var(--adv-accent)" },
             ]
           : []
       }
@@ -299,8 +299,8 @@ export default function ScanPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
 
           {/* Target */}
-          <div style={{ background: "#0D1B26", border: "1px solid #1A3A50", borderRadius: 6, padding: "14px 16px" }}>
-            <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#3D7A94", marginBottom: 8 }}>TARGET</div>
+          <div style={{ background: "linear-gradient(160deg, rgba(37,99,235,0.05) 0%, #FFFFFF 55%)", border: "1px solid var(--adv-border)", borderRadius: 6, padding: "14px 16px" }}>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--adv-text-muted)", marginBottom: 8 }}>TARGET</div>
             <input
               value={target}
               onChange={(e) => setTarget(e.target.value)}
@@ -308,19 +308,19 @@ export default function ScanPage() {
               placeholder="192.168.1.1, 10.0.0.0/24"
               style={{
                 width: "100%", boxSizing: "border-box",
-                background: "#050A0E", border: "1px solid #1A3A50", borderRadius: 5,
-                padding: "8px 12px", color: "#C8E8F0",
-                fontFamily: "'Share Tech Mono', monospace", fontSize: 12, outline: "none",
+                background: "var(--adv-bg)", border: "1px solid var(--adv-border)", borderRadius: 5,
+                padding: "8px 12px", color: "var(--adv-text)",
+                fontFamily: "'JetBrains Mono', monospace", fontSize: 12, outline: "none",
               }}
             />
-            <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 11, color: "#3D7A94", marginTop: 5 }}>
+            <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: "var(--adv-text-muted)", marginTop: 5 }}>
               IP, hostname, CIDR, or comma-separated list
             </div>
           </div>
 
           {/* Scan Type */}
-          <div style={{ background: "#0D1B26", border: "1px solid #1A3A50", borderRadius: 6, padding: "14px 16px" }}>
-            <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#3D7A94", marginBottom: 8 }}>SCAN PROFILE</div>
+          <div style={{ background: "linear-gradient(160deg, rgba(37,99,235,0.05) 0%, #FFFFFF 55%)", border: "1px solid var(--adv-border)", borderRadius: 6, padding: "14px 16px" }}>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--adv-text-muted)", marginBottom: 8 }}>SCAN PROFILE</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               {PROFILES.map((p) => (
                 <button
@@ -329,17 +329,17 @@ export default function ScanPage() {
                   style={{
                     display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 10px", borderRadius: 5, cursor: "pointer",
                     background: scanType === p.key ? `${p.color}10` : "transparent",
-                    border: `1px solid ${scanType === p.key ? `${p.color}40` : "#1A3A50"}`,
+                    border: `1px solid ${scanType === p.key ? `${p.color}40` : "#E2E8F0"}`,
                     textAlign: "left",
                   }}
                 >
                   <div style={{ width: 6, height: 6, borderRadius: "50%", background: p.color, marginTop: 4, flexShrink: 0 }} />
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: scanType === p.key ? p.color : "#C8E8F0" }}>{p.label}</span>
-                      <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#3D7A94" }}>{p.time}</span>
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: scanType === p.key ? p.color : "#0F172A" }}>{p.label}</span>
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)" }}>{p.time}</span>
                     </div>
-                    <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 11, color: "#3D7A94", marginTop: 2 }}>{p.desc}</div>
+                    <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: "var(--adv-text-muted)", marginTop: 2 }}>{p.desc}</div>
                   </div>
                 </button>
               ))}
@@ -352,12 +352,12 @@ export default function ScanPage() {
             disabled={!target.trim() && !scanning}
             style={{
               width: "100%", padding: "12px", borderRadius: 6,
-              border: `1px solid ${scanning ? "rgba(255,23,68,0.4)" : target.trim() ? `${selectedProfile.color}50` : "#1A3A50"}`,
+              border: `1px solid ${scanning ? "rgba(255,23,68,0.4)" : target.trim() ? `${selectedProfile.color}50` : "#E2E8F0"}`,
               background: scanning
                 ? "rgba(255,23,68,0.15)"
-                : target.trim() ? `${selectedProfile.color}20` : "rgba(61,122,148,0.1)",
-              color: scanning ? "#FF1744" : target.trim() ? selectedProfile.color : "#3D7A94",
-              fontFamily: "'Share Tech Mono', monospace", fontSize: 12, cursor: "pointer",
+                : target.trim() ? `${selectedProfile.color}20` : "rgba(100,116,139,0.1)",
+              color: scanning ? "#FF1744" : target.trim() ? selectedProfile.color : "#64748B",
+              fontFamily: "'JetBrains Mono', monospace", fontSize: 12, cursor: "pointer",
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
               transition: "all 0.15s ease",
             }}
@@ -370,8 +370,8 @@ export default function ScanPage() {
           </button>
 
           {/* Nmap Reference */}
-          <div style={{ background: "#0D1B26", border: "1px solid #1A3A50", borderRadius: 6, padding: "12px 14px" }}>
-            <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#3D7A94", marginBottom: 8 }}>COMMON FLAGS</div>
+          <div style={{ background: "linear-gradient(160deg, rgba(37,99,235,0.05) 0%, #FFFFFF 55%)", border: "1px solid var(--adv-border)", borderRadius: 6, padding: "12px 14px" }}>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", marginBottom: 8 }}>COMMON FLAGS</div>
             {[
               ["-sV",  "Service/version detection"],
               ["-sC",  "Default NSE scripts"],
@@ -382,8 +382,8 @@ export default function ScanPage() {
               ["-sS",  "TCP SYN (stealth)"],
             ].map(([flag, desc]) => (
               <div key={flag} style={{ display: "flex", gap: 8, marginBottom: 3 }}>
-                <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#00D4FF", width: 36, flexShrink: 0 }}>{flag}</span>
-                <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 11, color: "#3D7A94" }}>{desc}</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-accent)", width: 36, flexShrink: 0 }}>{flag}</span>
+                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: "var(--adv-text-muted)" }}>{desc}</span>
               </div>
             ))}
           </div>
@@ -393,28 +393,28 @@ export default function ScanPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
 
           {/* Live terminal */}
-          <div style={{ background: "#050A0E", border: "1px solid #1A3A50", borderRadius: 6, overflow: "hidden" }}>
-            <div style={{ padding: "8px 14px", borderBottom: "1px solid #1A3A50", display: "flex", alignItems: "center", gap: 8, justifyContent: "space-between" }}>
+          <div style={{ background: "var(--adv-bg)", border: "1px solid var(--adv-border)", borderRadius: 6, overflow: "hidden" }}>
+            <div style={{ padding: "8px 14px", borderBottom: "1px solid var(--adv-border)", display: "flex", alignItems: "center", gap: 8, justifyContent: "space-between" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <Terminal size={13} color="#00D4FF" />
-                <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#C8E8F0" }}>SCAN OUTPUT</span>
-                {scanning && <span className="animate-pulse-dot" style={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", background: "#00FF88" }} />}
+                <Terminal size={13} color="#2563EB" />
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--adv-text)" }}>SCAN OUTPUT</span>
+                {scanning && <span className="animate-pulse-dot" style={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", background: "#059669" }} />}
               </div>
               {logs.length > 0 && <CopyBtn text={logs.join("\n")} />}
             </div>
             <div
               ref={logRef}
-              style={{ height: 200, overflowY: "auto", padding: "10px 14px", fontFamily: "'Share Tech Mono', monospace", fontSize: 11, lineHeight: 1.6 }}
+              style={{ height: 200, overflowY: "auto", padding: "10px 14px", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, lineHeight: 1.6 }}
             >
               {logs.length === 0 ? (
-                <span style={{ color: "#3D7A94" }}>Ready. Configure target and press RUN SCAN.</span>
+                <span style={{ color: "var(--adv-text-muted)" }}>Ready. Configure target and press RUN SCAN.</span>
               ) : (
                 logs.map((line, i) => {
                   const color = line.startsWith("[ERROR]") ? "#FF1744"
-                    : line.startsWith("[DONE]") ? "#00FF88"
-                    : line.startsWith("[HOST]") ? "#00D4FF"
+                    : line.startsWith("[DONE]") ? "#059669"
+                    : line.startsWith("[HOST]") ? "#2563EB"
                     : line.startsWith("[RESULTS]") ? "#FFD600"
-                    : "#C8E8F0";
+                    : "#0F172A";
                   return (
                     <div key={i} style={{ color, marginBottom: 1 }}>{line}</div>
                   );
@@ -429,36 +429,36 @@ export default function ScanPage() {
               {/* Summary bar */}
               <div style={{
                 display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1,
-                background: "#1A3A50", borderRadius: 6, overflow: "hidden",
+                background: "#E2E8F0", borderRadius: 6, overflow: "hidden",
               }}>
                 {[
-                  { label: "TOTAL HOSTS",  value: result.totalHosts, color: "#C8E8F0" },
-                  { label: "HOSTS UP",     value: result.upHosts,    color: "#00FF88" },
-                  { label: "OPEN PORTS",   value: result.hosts.reduce((a, h) => a + h.openCount, 0), color: "#00D4FF" },
+                  { label: "TOTAL HOSTS",  value: result.totalHosts, color: "var(--adv-text)" },
+                  { label: "HOSTS UP",     value: result.upHosts,    color: "#059669" },
+                  { label: "OPEN PORTS",   value: result.hosts.reduce((a, h) => a + h.openCount, 0), color: "var(--adv-accent)" },
                   { label: "ELAPSED",      value: result.elapsed,    color: "#FFD600" },
                 ].map((m) => (
-                  <div key={m.label} style={{ background: "#0D1B26", padding: "10px 14px", textAlign: "center" }}>
-                    <div className="animate-fade-up" style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 22, fontWeight: 700, color: m.color, lineHeight: 1 }}>{m.value}</div>
-                    <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#3D7A94", marginTop: 3 }}>{m.label}</div>
+                  <div key={m.label} style={{ background: "var(--adv-panel)", padding: "10px 14px", textAlign: "center" }}>
+                    <div className="animate-fade-up" style={{ fontFamily: "'Inter', sans-serif", fontSize: 22, fontWeight: 700, color: m.color, lineHeight: 1 }}>{m.value}</div>
+                    <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", marginTop: 3 }}>{m.label}</div>
                   </div>
                 ))}
               </div>
 
               {/* Host cards */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#3D7A94" }}>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--adv-text-muted)" }}>
                   {result.hosts.filter((h) => h.state === "up").length} host(s) up · {result.scanType} · {result.target}
                 </span>
                 <div style={{ display: "flex", gap: 8 }}>
                   <button
                     onClick={() => setShowRaw(!showRaw)}
-                    style={{ padding: "5px 12px", background: "transparent", border: "1px solid #1A3A50", borderRadius: 4, color: "#3D7A94", fontFamily: "'Share Tech Mono', monospace", fontSize: 10, cursor: "pointer" }}
+                    style={{ padding: "5px 12px", background: "transparent", border: "1px solid var(--adv-border)", borderRadius: 4, color: "var(--adv-text-muted)", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, cursor: "pointer" }}
                   >
                     {showRaw ? "HIDE" : "RAW"} JSON
                   </button>
                   <button
                     onClick={exportJson}
-                    style={{ padding: "5px 12px", background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.2)", borderRadius: 4, color: "#00D4FF", fontFamily: "'Share Tech Mono', monospace", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
+                    style={{ padding: "5px 12px", background: "rgba(37,99,235,0.08)", border: "1px solid rgba(37,99,235,0.2)", borderRadius: 4, color: "var(--adv-accent)", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
                   >
                     <Download size={11} /> EXPORT JSON
                   </button>
@@ -466,7 +466,7 @@ export default function ScanPage() {
               </div>
 
               {showRaw && (
-                <pre style={{ background: "#050A0E", border: "1px solid #1A3A50", borderRadius: 6, padding: 14, overflow: "auto", maxHeight: 300, fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#C8E8F0" }}>
+                <pre style={{ background: "var(--adv-bg)", border: "1px solid var(--adv-border)", borderRadius: 6, padding: 14, overflow: "auto", maxHeight: 300, fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text)" }}>
                   {JSON.stringify(result, null, 2)}
                 </pre>
               )}
@@ -482,11 +482,11 @@ export default function ScanPage() {
           {!result && !scanning && (
             <div style={{
               flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-              border: "1px dashed #1A3A50", borderRadius: 8, padding: 40, gap: 12,
+              border: "1px dashed #E2E8F0", borderRadius: 8, padding: 40, gap: 12,
             }}>
-              <Terminal size={36} color="#1A3A50" />
-              <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 13, color: "#3D7A94" }}>NO SCAN RESULTS</div>
-              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: "#3D7A94", textAlign: "center", maxWidth: 300 }}>
+              <Terminal size={36} color="#E2E8F0" />
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: "var(--adv-text-muted)" }}>NO SCAN RESULTS</div>
+              <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: "var(--adv-text-muted)", textAlign: "center", maxWidth: 300 }}>
                 Enter a target IP, hostname, or CIDR range and select a scan profile to begin.
               </div>
             </div>

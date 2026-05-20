@@ -1,6 +1,6 @@
 # ADVERSA — AI-Powered Network VAPT Platform
 
-**ADVERSA** is an autonomous, AI-driven Vulnerability Assessment and Penetration Testing (VAPT) operations platform built for enterprise network security engagements. It combines a multi-agent AI offensive reasoning engine with structured findings management, network segmentation validation, Active Directory attack surface analysis, detection gap mapping, and compliance-mapped reporting.
+**ADVERSA** is an autonomous, AI-driven Vulnerability Assessment and Penetration Testing (VAPT) operations platform built for enterprise network security engagements.aa It combines a multi-agent AI offensive reasoning engine with structured findings management, network segmentation validation, Active Directory attack surface analysis, detection gap mapping, and compliance-mapped reporting.
 
 > **Classification:** For authorized security testing, internal use, and controlled lab environments only.
 
@@ -25,7 +25,7 @@
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 18+ 
 - npm / pnpm / yarn / bun
 - Anthropic API key (for AI Brain module)
 
