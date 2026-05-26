@@ -58,9 +58,10 @@ RUN ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/') && \
       -o /tmp/nuclei.zip && \
     unzip -q /tmp/nuclei.zip nuclei -d /usr/local/bin && \
     rm /tmp/nuclei.zip && chmod +x /usr/local/bin/nuclei && \
-    mkdir -p /opt/nuclei-templates && \
+    mkdir -p /opt/nuclei-templates /opt/.config/nuclei /opt/.local && \
     HOME=/opt nuclei -update-templates -silent 2>/dev/null || true && \
-    chmod -R o+rX /opt/nuclei-templates 2>/dev/null || true
+    chmod -R o+rX  /opt/nuclei-templates 2>/dev/null || true && \
+    chmod -R o+rwX /opt/.config /opt/.local 2>/dev/null || true
 
 # testssl.sh — TLS cipher/cert analysis
 RUN curl -sSfL https://raw.githubusercontent.com/drwetter/testssl.sh/3.2/testssl.sh \
