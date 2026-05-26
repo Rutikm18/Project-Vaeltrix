@@ -17,14 +17,18 @@ services:
       context: .
       dockerfile: Dockerfile
       target: runner
+      network: host
     image: adversa:latest
     ports:
       - "${PORT:-3000}:3000"
     environment:
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: "1"
-      # Server-side secret — passed at runtime, never baked into the image
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    # Raw socket access required for nmap SYN scans and naabu port discovery
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/"]
@@ -34,20 +38,21 @@ services:
       start_period: 15s
     profiles: [prod]
 
-  # ── Development (hot reload) ─────────────────────────────────────────────────
+  # ── Development (hot reload + scanning tools via runner image) ───────────────
   adversa-dev:
     container_name: adversa-dev
     build:
       context: .
       dockerfile: Dockerfile
-      target: deps           # Only install deps; source is mounted
+      target: runner          # Use runner so tools are present
     image: adversa:dev
     working_dir: /app
-    command: npm run dev
+    # Override to run dev server; mount source for hot reload
+    user: root                # Root needed for nmap SYN scan in dev
+    command: sh -c "npm install --prefer-offline 2>/dev/null; npm run dev"
     ports:
       - "${DEV_PORT:-3001}:3000"
     volumes:
-      # Mount source for hot reload; preserve container's node_modules
       - .:/app
       - /app/node_modules
       - /app/.next
@@ -55,4 +60,7 @@ services:
       NODE_ENV: development
       NEXT_TELEMETRY_DISABLED: "1"
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
     profiles: [dev]

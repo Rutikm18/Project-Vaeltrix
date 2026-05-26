@@ -1,1071 +1,515 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Menu } from "lucide-react";
-import { Sidebar } from "../components/Sidebar";
+import React, { useState, useRef, useCallback, useEffect } from "react";
+import {
+  Network, Activity, Shield, Cpu, ArrowRight,
+  ChevronRight, Clock, BarChart2, Zap,
+} from "lucide-react";
+import { PageShell } from "../components/PageShell";
 import { DashboardCharts } from "../components/DashboardCharts";
-
-/* ─── Types ─── */
-interface MetricCardData {
-  label: string;
-  value: number;
-  accent: string;
-  trend: number;
-}
-
-interface AttackPath {
-  id: string;
-  origin: string;
-  target: string;
-  severity: "CRITICAL" | "HIGH" | "MEDIUM";
-  confidence: number;
-  status: "VALIDATED" | "SIMULATING" | "PENDING";
-}
-
-interface Agent {
-  name: string;
-  status: "ACTIVE" | "THINKING" | "IDLE";
-  activity: string;
-}
-
-interface ProtocolData {
-  name: string;
-  value: number;
-}
-
-interface ZoneData {
-  name: string;
-  score: number;
-}
-
-interface EvidenceBreakdown {
-  label: string;
-  value: number;
-}
+import { useMouseGradient } from "../hooks/useMouseGradient";
 
 /* ─── Data ─── */
-const metrics: MetricCardData[] = [
-  { label: "CRITICAL PATHS", value: 14, accent: "#FF4444", trend: 12 },
-  { label: "VALIDATED EXPLOITS", value: 6, accent: "#059669", trend: -3 },
-  { label: "AD ATTACK VECTORS", value: 3, accent: "#FF9900", trend: 5 },
-  { label: "DETECTION GAPS", value: 9, accent: "#2563EB", trend: 8 },
+type Severity   = "CRITICAL" | "HIGH" | "MEDIUM";
+type PathStatus = "VALIDATED" | "SIMULATING" | "PENDING";
+type AgentStatus= "ACTIVE" | "THINKING" | "IDLE";
+
+interface AttackPath { id: string; origin: string; target: string; severity: Severity; confidence: number; status: PathStatus; }
+interface Agent      { name: string; status: AgentStatus; activity: string; }
+
+const ATTACK_PATHS: AttackPath[] = [
+  { id: "AP-001", origin: "WS-042",   target: "DC01",         severity: "CRITICAL", confidence: 97, status: "VALIDATED"  },
+  { id: "AP-002", origin: "SVC-SQL",  target: "DOMAIN ADMIN", severity: "CRITICAL", confidence: 94, status: "VALIDATED"  },
+  { id: "AP-003", origin: "VLAN30",   target: "VLAN10",       severity: "HIGH",     confidence: 88, status: "SIMULATING" },
+  { id: "AP-004", origin: "WS-042",   target: "10.10.10.0/24",severity: "HIGH",     confidence: 82, status: "SIMULATING" },
+  { id: "AP-005", origin: "INT-SEG",  target: "NTLM-RELAY",   severity: "MEDIUM",   confidence: 71, status: "PENDING"    },
 ];
 
-const attackPaths: AttackPath[] = [
-  { id: "AP-001", origin: "WS-042", target: "DC01", severity: "CRITICAL", confidence: 97, status: "VALIDATED" },
-  { id: "AP-002", origin: "SVC-SQL", target: "DOMAIN ADMIN", severity: "CRITICAL", confidence: 94, status: "VALIDATED" },
-  { id: "AP-003", origin: "VLAN30", target: "VLAN10", severity: "HIGH", confidence: 88, status: "SIMULATING" },
-  { id: "AP-004", origin: "WS-042", target: "10.10.10.0/24", severity: "HIGH", confidence: 82, status: "SIMULATING" },
-  { id: "AP-005", origin: "INT-SEG", target: "NTLM-RELAY", severity: "MEDIUM", confidence: 71, status: "PENDING" },
+const AGENTS: Agent[] = [
+  { name: "Recon Agent",       status: "ACTIVE",   activity: "Enumerating 10.10.10.0/24"   },
+  { name: "Exploit Agent",     status: "THINKING", activity: "Validating Kerberoast path…"  },
+  { name: "Lateral Agent",     status: "IDLE",     activity: "Standby"                     },
+  { name: "AD Trust Analyzer", status: "ACTIVE",   activity: "Mapping corp.local trusts"   },
+  { name: "Stealth Agent",     status: "ACTIVE",   activity: "Profiling EDR baseline"      },
 ];
 
-const agents: Agent[] = [
-  { name: "Recon Agent", status: "ACTIVE", activity: "Enumerating 10.10.10.0/24" },
-  { name: "Exploit Agent", status: "THINKING", activity: "Validating Kerberoast path..." },
-  { name: "Lateral Agent", status: "IDLE", activity: "Standby" },
-  { name: "AD Trust Analyzer", status: "ACTIVE", activity: "Mapping corp.local trusts" },
-  { name: "Stealth Agent", status: "ACTIVE", activity: "Profiling EDR baseline" },
+const SLA_FINDINGS = [
+  { id: "VAPT-CRIT-001", title: "Unconstrained Kerberos Delegation on DC01",      severity: "CRITICAL" as const, status: "OPEN",           deadline: "2026-05-11T09:32:00Z", hoursTotal: 24  },
+  { id: "VAPT-CRIT-002", title: "Kerberoastable svc_backup → Domain Admin",       severity: "CRITICAL" as const, status: "IN_REVIEW",      deadline: "2026-05-11T10:14:00Z", hoursTotal: 24  },
+  { id: "VAPT-HIGH-001", title: "LLMNR/NBT-NS Poisoning — NTLM Credential Relay", severity: "HIGH"     as const, status: "IN_REMEDIATION", deadline: "2026-05-13T11:05:00Z", hoursTotal: 72  },
+  { id: "VAPT-HIGH-002", title: "Lateral Movement via WMI — WS-042 to CORP",      severity: "HIGH"     as const, status: "OPEN",           deadline: "2026-05-13T14:22:00Z", hoursTotal: 72  },
+  { id: "VAPT-MED-001",  title: "Network Segmentation Bypass — VLAN30 to VLAN10", severity: "MEDIUM"   as const, status: "VERIFIED",       deadline: "2026-05-18T09:15:00Z", hoursTotal: 168 },
 ];
 
-const protocols: ProtocolData[] = [
-  { name: "SMB", value: 78 },
-  { name: "LDAP", value: 91 },
+const PROTOCOLS = [
+  { name: "LDAP",     value: 91 },
+  { name: "SMB",      value: 78 },
   { name: "Kerberos", value: 65 },
-  { name: "RPC", value: 43 },
+  { name: "RPC",      value: 43 },
 ];
 
-const zones: ZoneData[] = [
-  { name: "DMZ", score: 94 },
-  { name: "CORP", score: 71 },
-  { name: "OT", score: 88 },
+const ZONES = [
   { name: "MGMT", score: 96 },
+  { name: "DMZ",  score: 94 },
+  { name: "OT",   score: 88 },
+  { name: "CORP", score: 71 },
 ];
-
-const evidenceBreakdown: EvidenceBreakdown[] = [
-  { label: "CRITICAL", value: 97 },
-  { label: "HIGH", value: 88 },
-  { label: "MEDIUM", value: 71 },
-];
-
-const tickerMessages = [
-  "AP-001 VALIDATED — DC01 fully compromised path confirmed",
-  "Kerberoast path svc_backup → Domain Admin — 94% confidence",
-  "LLMNR poisoning active — credential relay window open",
-];
-
-/* ─── SLA Data ─── */
-interface SlaFinding {
-  id: string;
-  title: string;
-  severity: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
-  status: string;
-  slaDeadline: string;
-  hoursTotal: number;
-}
-
-const SLA_FINDINGS: SlaFinding[] = [
-  { id: "VAPT-CRIT-001", title: "Unconstrained Kerberos Delegation on DC01",           severity: "CRITICAL", status: "OPEN",           slaDeadline: "2026-05-11T09:32:00Z", hoursTotal: 24  },
-  { id: "VAPT-CRIT-002", title: "Kerberoastable svc_backup → Domain Admin",            severity: "CRITICAL", status: "IN_REVIEW",      slaDeadline: "2026-05-11T10:14:00Z", hoursTotal: 24  },
-  { id: "VAPT-HIGH-001", title: "LLMNR/NBT-NS Poisoning — NTLM Credential Relay",      severity: "HIGH",     status: "IN_REMEDIATION", slaDeadline: "2026-05-13T11:05:00Z", hoursTotal: 72  },
-  { id: "VAPT-HIGH-002", title: "Lateral Movement via WMI — WS-042 to CORP",           severity: "HIGH",     status: "OPEN",           slaDeadline: "2026-05-13T14:22:00Z", hoursTotal: 72  },
-  { id: "VAPT-MED-001",  title: "Network Segmentation Bypass — VLAN30 to VLAN10",      severity: "MEDIUM",   status: "VERIFIED",       slaDeadline: "2026-05-18T09:15:00Z", hoursTotal: 168 },
-];
-
-const SEV_SLA_COLOR: Record<string, string> = {
-  CRITICAL: "#FF1744", HIGH: "#FF6D00", MEDIUM: "#FFD600", LOW: "#00E676",
-};
-
-function getSlaInfo(f: SlaFinding) {
-  const due = new Date(f.slaDeadline).getTime();
-  const now = Date.now();
-  const totalMs = f.hoursTotal * 3_600_000;
-  const leftMs = due - now;
-  const pct = Math.max(0, Math.min(100, (leftMs / totalMs) * 100));
-  const breached = now > due;
-  const hoursLeft = Math.max(0, leftMs / 3_600_000);
-  let color = "#00E676";
-  if (breached || pct < 10) color = "#FF1744";
-  else if (pct < 25) color = "#FF6D00";
-  else if (pct < 50) color = "#FFD600";
-  const label = breached ? "BREACHED" : hoursLeft < 24 ? `${Math.round(hoursLeft)}h left` : `${Math.round(hoursLeft / 24)}d left`;
-  return { pct, breached, color, label, hoursLeft };
-}
 
 /* ─── Helpers ─── */
-const severityColor = (s: AttackPath["severity"]) => {
-  switch (s) {
-    case "CRITICAL":
-      return "#FF4444";
-    case "HIGH":
-      return "#FF9900";
-    case "MEDIUM":
-      return "#FFD500";
-    default:
-      return "#64748B";
-  }
+function getSla(deadline: string, hoursTotal: number) {
+  const due = new Date(deadline).getTime(), now = Date.now();
+  const pct = Math.max(0, Math.min(100, ((due - now) / (hoursTotal * 3_600_000)) * 100));
+  const hrs = Math.max(0, (due - now) / 3_600_000);
+  const breached = now > due;
+  const color = breached || pct < 10 ? "var(--sev-critical-color)"
+    : pct < 25 ? "var(--sev-high-color)"
+    : pct < 50 ? "var(--sev-medium-color)"
+    : "var(--accent)";
+  const label = breached ? "BREACHED" : hrs < 24 ? `${Math.round(hrs)}h` : `${Math.round(hrs / 24)}d`;
+  return { pct, breached, color, label };
+}
+
+function riskColor(v: number) {
+  return v >= 85 ? "var(--sev-critical-color)" : v >= 65 ? "var(--sev-high-color)" : v >= 45 ? "var(--sev-medium-color)" : "var(--accent)";
+}
+
+const PATH_STATUS: Record<PathStatus, { color: string; bg: string }> = {
+  VALIDATED:  { color: "var(--accent)",           bg: "var(--accent-ghost)"    },
+  SIMULATING: { color: "var(--sev-high-color)",   bg: "var(--sev-high-bg)"     },
+  PENDING:    { color: "var(--text-muted)",       bg: "var(--bg-hover)"        },
 };
 
-const statusColor = (s: AttackPath["status"]) => {
-  switch (s) {
-    case "VALIDATED":
-      return "rgba(5,150,105,0.15)";
-    case "SIMULATING":
-      return "rgba(255,153,0,0.15)";
-    case "PENDING":
-      return "rgba(100,116,139,0.15)";
-  }
+const SEV_LABEL: Record<Severity, { color: string; bg: string }> = {
+  CRITICAL: { color: "var(--sev-critical-color)", bg: "var(--sev-critical-bg)" },
+  HIGH:     { color: "var(--sev-high-color)",     bg: "var(--sev-high-bg)"     },
+  MEDIUM:   { color: "var(--sev-medium-color)",   bg: "var(--sev-medium-bg)"   },
 };
 
-const statusTextColor = (s: AttackPath["status"]) => {
-  switch (s) {
-    case "VALIDATED":
-      return "#059669";
-    case "SIMULATING":
-      return "#FF9900";
-    case "PENDING":
-      return "#64748B";
-  }
+const AGENT_STATUS: Record<AgentStatus, { color: string; glow: string; pulse: boolean }> = {
+  ACTIVE:   { color: "var(--accent)",           glow: "var(--accent-glow)",         pulse: true  },
+  THINKING: { color: "var(--sev-high-color)",   glow: "var(--sev-high-glow)",       pulse: true  },
+  IDLE:     { color: "var(--text-muted)",       glow: "transparent",                pulse: false },
 };
 
-const barColor = (v: number) => {
-  if (v >= 90) return "#059669";
-  if (v >= 70) return "#2563EB";
-  if (v >= 50) return "#FF9900";
-  return "#FF4444";
-};
-
-/* ─── Components ─── */
-
-function StatusDot({ status }: { status: Agent["status"] }) {
-  const color = status === "ACTIVE" ? "#059669" : status === "THINKING" ? "#FF9900" : "#64748B";
+/* ─── Sub-components ─── */
+function SectionHeader({ icon, title, action, delay = 0 }: { icon: React.ReactNode; title: string; action?: React.ReactNode; delay?: number }) {
   return (
-    <span
-      className={status === "ACTIVE" || status === "THINKING" ? "animate-pulse-dot" : ""}
-      style={{
-        display: "inline-block",
-        width: 7,
-        height: 7,
-        borderRadius: "50%",
-        background: color,
-        flexShrink: 0,
-      }}
-    />
+    <div className="stagger-item" style={{ animationDelay: `${delay}ms`, display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ color: "var(--accent)", display: "flex", transition: "transform 0.2s var(--ease-spring)" }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = "scale(1.2) rotate(-5deg)"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = "scale(1) rotate(0deg)"; }}
+        >
+          {icon}
+        </div>
+        <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
+          {title}
+        </span>
+      </div>
+      {action}
+    </div>
   );
 }
 
 function ConfidenceBar({ value }: { value: number }) {
+  const color = value >= 90 ? "var(--sev-critical-color)" : value >= 75 ? "var(--sev-high-color)" : "var(--sev-medium-color)";
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 6, width: 80 }}>
-      <span
-        style={{
-          display: "inline-block",
-          width: `${value}%`,
-          height: 3,
-          background: barColor(value),
-          borderRadius: 1,
-          minWidth: 2,
-        }}
-      />
+    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <div className="progress-track" style={{ width: 60, height: 4 }}>
+        <div className="progress-fill" style={{ width: `${value}%`, background: color }} />
+      </div>
+      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 700, color, minWidth: 32 }}>
+        {value}%
+      </span>
     </div>
   );
 }
 
-/* ─── Main Page ─── */
-export default function Dashboard() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sessionTime, setSessionTime] = useState(0);
-  const [tickerIndex, setTickerIndex] = useState(0);
-  const [utcTime, setUtcTime] = useState("");
-  const [agentsOnline, setAgentsOnline] = useState(3);
-  const [criticalCount, setCriticalCount] = useState(4);
-  const [opsActive, setOpsActive] = useState(3);
-  /* Session Timer */
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setSessionTime((prev) => prev + 1);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const formatSessionTime = useCallback((seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-  }, []);
-
-  /* Ticker */
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTickerIndex((prev) => (prev + 1) % tickerMessages.length);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
-
-  /* UTC Clock */
-  useEffect(() => {
-    const update = () => {
-      setUtcTime(new Date().toISOString().replace("T", " ").slice(0, 19) + " UTC");
-    };
-    update();
-    const interval = setInterval(update, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  /* Simulated live metrics */
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setAgentsOnline((prev) => {
-        const change = Math.random() > 0.7 ? (Math.random() > 0.5 ? 1 : -1) : 0;
-        return Math.max(1, Math.min(5, prev + change));
-      });
-    }, 8000);
-    return () => clearInterval(interval);
-  }, []);
+/* ─── Animated card wrapper with mouse glow ─── */
+function GlowCard({ children, delay = 0, style }: { children: React.ReactNode; delay?: number; style?: React.CSSProperties }) {
+  const { ref, onMouseMove, onMouseLeave } = useMouseGradient<HTMLDivElement>();
+  const [hovered, setHovered] = useState(false);
 
   return (
     <div
+      ref={ref}
+      onMouseMove={onMouseMove}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => { onMouseLeave(); setHovered(false); }}
+      className="stagger-item"
       style={{
-        display: "flex",
-        height: "100vh",
-        background: "#08090D",
-        fontFamily: "'Inter', sans-serif",
+        animationDelay: `${delay}ms`,
+        background: "var(--bg-panel)",
+        border: `0.5px solid ${hovered ? "var(--border-strong)" : "var(--border-subtle)"}`,
+        borderRadius: 14,
         overflow: "hidden",
+        position: "relative",
+        transition: "border-color 0.18s ease, transform 0.18s var(--ease-out), box-shadow 0.2s ease",
+        transform: hovered ? "translateY(-2px)" : "translateY(0)",
+        boxShadow: hovered ? "var(--shadow-md)" : "none",
+        ...style,
       }}
     >
-      {/* ─── Mobile Sidebar Overlay ─── */}
-      {sidebarOpen && (
-        <div
-          className="md:hidden"
-          onClick={() => setSidebarOpen(false)}
-          style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.75)", zIndex: 40 }}
-        />
-      )}
+      {/* Mouse-follow glow overlay */}
+      <div style={{
+        position: "absolute", inset: 0, borderRadius: "inherit",
+        pointerEvents: "none", zIndex: 0,
+        opacity: hovered ? 1 : 0,
+        transition: "opacity 0.2s ease",
+        background: "radial-gradient(circle at var(--glow-x, 50%) var(--glow-y, 50%), var(--accent-glow) 0%, transparent 65%)",
+      } as React.CSSProperties} />
+      <div style={{ position: "relative", zIndex: 1, height: "100%" }}>
+        {children}
+      </div>
+    </div>
+  );
+}
 
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+/* ─── Dashboard ─── */
+export default function Dashboard() {
+  const [agentsOnline, setAgentsOnline] = useState(3);
+  const breachedCount = SLA_FINDINGS.filter((f) => getSla(f.deadline, f.hoursTotal).breached).length;
 
-      {/* ─── Main Content Wrapper ─── */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        {/* ─── Top Navbar ─── */}
-        <header
-          style={{
-            height: 52,
-            borderBottom: "0.5px solid #1E2028",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "0 20px",
-            flexShrink: 0,
-            background: "#12141A",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            {/* Hamburger */}
-            <button
-              className="md:hidden"
-              onClick={() => setSidebarOpen(true)}
-              style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
-            >
-              <Menu size={20} color="#2563EB" />
-            </button>
-            <span
-              style={{
-                fontFamily: "'Inter', sans-serif",
-                fontSize: 14,
-                fontWeight: 600,
-                color: "#E8ECF0",
-              }}
-            >
-              Dashboard
-            </span>
-            <span style={{ color: "#2A2D38", fontSize: 16 }}>/</span>
-            <span
-              style={{
-                fontFamily: "'Inter', sans-serif",
-                fontSize: 12,
-                color: "#8C95A0",
-                fontWeight: 400,
-              }}
-            >
-              Security Overview
-            </span>
-            <span
-              className="animate-pulse-dot"
-              style={{
-                display: "inline-block",
-                width: 6,
-                height: 6,
-                borderRadius: "50%",
-                background: "#00C882",
-                marginLeft: 8,
-                flexShrink: 0,
-              }}
+  useEffect(() => {
+    const id = setInterval(() => {
+      setAgentsOnline((p) => Math.max(1, Math.min(5, p + (Math.random() > 0.7 ? (Math.random() > 0.5 ? 1 : -1) : 0))));
+    }, 8000);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <PageShell
+      title="Dashboard"
+      subtitle="Security Overview"
+      statusItems={[
+        { label: "AGENTS",  value: `${agentsOnline}/5`,          color: "var(--accent)"             },
+        { label: "SLA",     value: breachedCount > 0 ? `${breachedCount} BREACHED` : "ON TRACK", color: breachedCount > 0 ? "var(--sev-critical-color)" : "var(--accent)" },
+        { label: "OPS",     value: "3 ACTIVE",                   color: "var(--sev-high-color)"     },
+      ]}
+    >
+      <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
+
+        {/* KPIs + Charts */}
+        <DashboardCharts />
+
+        {/* Separator */}
+        <div style={{ height: "0.5px", background: "var(--border-subtle)" }} />
+
+        {/* ── Attack Paths + Agent Monitor ── */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 16 }}>
+
+          {/* Attack Paths */}
+          <div>
+            <SectionHeader delay={200} icon={<Network size={15} />} title="Attack Paths"
+              action={
+                <a href="/attack-graph" style={{ display: "flex", alignItems: "center", gap: 4, fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 500, color: "var(--accent)", textDecoration: "none", transition: "opacity 0.15s ease" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.7")}
+                  onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+                >
+                  View graph <ChevronRight size={13} />
+                </a>
+              }
             />
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#8C95A0" }}>
-              AGENTS <span style={{ color: "#00C882" }}>{agentsOnline}</span>/5
-            </span>
-            <span style={{ width: 1, height: 14, background: "#1E2028" }} />
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#8C95A0" }}>
-              SESSION {formatSessionTime(sessionTime)}
-            </span>
-            <span style={{ width: 1, height: 14, background: "#1E2028" }} />
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#FF4B4B" }}>
-              CRIT {criticalCount}
-            </span>
-            <span style={{ width: 1, height: 14, background: "#1E2028" }} />
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#FF8C00" }}>
-              OPS {opsActive}
-            </span>
-          </div>
-        </header>
-
-        {/* ─── Main Content ─── */}
-        <main
-          style={{
-            flex: 1,
-            overflowY: "auto",
-            padding: 20,
-          }}
-        >
-          {/* ── React Query Dashboard Charts (Prompt 9) ── */}
-          <DashboardCharts />
-
-          {/* SECTION A — Metric Cards */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-              gap: 16,
-              marginBottom: 20,
-            }}
-          >
-            {metrics.map((m) => (
-              <div
-                key={m.label}
-                className="card-hover"
-                style={{
-                  background: "linear-gradient(135deg, rgba(37,99,235,0.05) 0%, var(--adv-panel) 60%)",
-                  border: "1px solid var(--adv-border)",
-                  borderRadius: 6,
-                  padding: "16px 20px",
-                  position: "relative",
-                  overflow: "hidden",
-                }}
-              >
-                {/* top accent line */}
-                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg, ${m.accent}, transparent)` }} />
-                {/* bottom accent bar */}
-                <div
-                  style={{
-                    position: "absolute",
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    height: 2,
-                    background: `linear-gradient(90deg, ${m.accent}, #CBD5E1)`,
-                  }}
-                />
-                <div
-                  style={{
-                    fontFamily: "'JetBrains Mono', monospace",
-                    fontSize: 10,
-                    color: "var(--adv-text-muted)",
-                    textTransform: "uppercase",
-                    letterSpacing: 1,
-                    marginBottom: 8,
-                  }}
-                >
-                  {m.label}
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "baseline",
-                    gap: 8,
-                  }}
-                >
-                  <span
-                    style={{
-                      fontFamily: "'Inter', sans-serif",
-                      fontSize: 28,
-                      fontWeight: 700,
-                      color: m.accent,
-                      lineHeight: 1,
-                    }}
-                  >
-                    {m.value}
-                  </span>
-                  <span
-                    style={{
-                      fontFamily: "'JetBrains Mono', monospace",
-                      fontSize: 11,
-                      color: m.trend >= 0 ? "#059669" : "#FF4444",
-                    }}
-                  >
-                    {m.trend >= 0 ? "↑" : "↓"} {Math.abs(m.trend)}%
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* SECTION SLA — SLA Tracking Dashboard */}
-          {(() => {
-            const breachedItems = SLA_FINDINGS.filter((f) => getSlaInfo(f).breached);
-            const riskItems     = SLA_FINDINGS.filter((f) => { const s = getSlaInfo(f); return !s.breached && s.pct < 25; });
-            const upcoming48h   = SLA_FINDINGS.filter((f) => { const s = getSlaInfo(f); return !s.breached && s.hoursLeft <= 48; });
-            const byStatus: Record<string, { on: number; breached: number }> = {};
-            for (const f of SLA_FINDINGS) {
-              const s = getSlaInfo(f);
-              if (!byStatus[f.severity]) byStatus[f.severity] = { on: 0, breached: 0 };
-              s.breached ? byStatus[f.severity].breached++ : byStatus[f.severity].on++;
-            }
-            return (
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", letterSpacing: 2, marginBottom: 10 }}>SLA TRACKING</div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginBottom: 14 }}>
-                  {[
-                    { label: "SLA BREACHED",    value: breachedItems.length, color: "#FF1744", pulse: breachedItems.length > 0 },
-                    { label: "BREACH RISK",      value: riskItems.length,     color: "#FF6D00", pulse: false },
-                    { label: "DUE IN 48H",       value: upcoming48h.length,   color: "#FFD600", pulse: false },
-                    { label: "ON TRACK",         value: SLA_FINDINGS.filter((f) => !getSlaInfo(f).breached && getSlaInfo(f).pct >= 25).length, color: "#00E676", pulse: false },
-                  ].map((m) => (
-                    <div key={m.label} style={{ background: "var(--adv-panel)", border: `1px solid ${m.color}25`, borderRadius: 6, padding: "12px 14px", position: "relative", overflow: "hidden" }}>
-                      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 2, background: m.color }} />
-                      <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", letterSpacing: 1, marginBottom: 6 }}>{m.label}</div>
-                      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 26, fontWeight: 700, color: m.color, lineHeight: 1 }} className={m.pulse ? "animate-glow-critical" : ""}>
-                        {m.value}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 0.55fr", gap: 12 }}>
-                  {/* Left: finding-level SLA status */}
-                  <div style={{ background: "var(--adv-panel)", border: "1px solid var(--adv-border)", borderRadius: 6, overflow: "hidden" }}>
-                    <div style={{ padding: "10px 14px", borderBottom: "1px solid var(--adv-border)", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text)", letterSpacing: 1 }}>
-                      FINDING SLA STATUS
-                    </div>
-                    <div style={{ padding: "4px 0" }}>
-                      {SLA_FINDINGS.map((f) => {
-                        const s = getSlaInfo(f);
-                        return (
-                          <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", borderBottom: "1px solid rgba(37,99,235,0.06)" }}>
-                            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: SEV_SLA_COLOR[f.severity], width: 58, flexShrink: 0 }}>{f.severity}</span>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: "var(--adv-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{f.title}</div>
-                              <div style={{ height: 2, background: "#E2E8F0", borderRadius: 1, marginTop: 4, overflow: "hidden" }}>
-                                <div className={s.breached ? "sla-pulse" : "progress-bar-fill"} style={{ height: "100%", width: `${s.pct}%`, background: s.color, borderRadius: 1 }} />
-                              </div>
-                            </div>
-                            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: s.color, flexShrink: 0, minWidth: 72, textAlign: "right" }}>{s.label}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Right: SLA by severity */}
-                  <div style={{ background: "var(--adv-panel)", border: "1px solid var(--adv-border)", borderRadius: 6, overflow: "hidden" }}>
-                    <div style={{ padding: "10px 14px", borderBottom: "1px solid var(--adv-border)", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text)", letterSpacing: 1 }}>
-                      SLA BY SEVERITY
-                    </div>
-                    <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 14 }}>
-                      {(["CRITICAL", "HIGH", "MEDIUM"] as const).map((sev) => {
-                        const stats = byStatus[sev] ?? { on: 0, breached: 0 };
-                        const total = stats.on + stats.breached;
-                        const pct = total === 0 ? 100 : Math.round((stats.on / total) * 100);
-                        return (
-                          <div key={sev}>
-                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: SEV_SLA_COLOR[sev] }}>{sev}</span>
-                              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: pct === 100 ? "#00E676" : pct === 0 ? "#FF1744" : "#FFD600" }}>{pct}% on-time</span>
-                            </div>
-                            <div style={{ height: 4, background: "#E2E8F0", borderRadius: 2, overflow: "hidden" }}>
-                              <div className="progress-bar-fill" style={{ height: "100%", width: `${pct}%`, background: pct === 100 ? "#00E676" : pct === 0 ? "#FF1744" : "#FFD600", borderRadius: 2 }} />
-                            </div>
-                            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", marginTop: 3 }}>
-                              {stats.breached > 0 ? `${stats.breached} breached` : "No breaches"} · {total} total
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* SECTION B — Two Columns */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 0.4fr",
-              gap: 16,
-              marginBottom: 20,
-            }}
-          >
-            {/* LEFT: Attack Paths Table */}
-            <div
-              style={{
-                background: "linear-gradient(160deg, rgba(37,99,235,0.05) 0%, var(--adv-panel) 50%)",
-                border: "1px solid var(--adv-border)",
-                borderRadius: 6,
-                overflow: "hidden",
-              }}
-            >
-              <div
-                style={{
-                  padding: "12px 16px",
-                  borderBottom: "1px solid var(--adv-border)",
-                  background: "linear-gradient(90deg, rgba(37,99,235,0.06) 0%, transparent 70%)",
-                  fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: 12,
-                  color: "var(--adv-text)",
-                  letterSpacing: 1,
-                }}
-              >
-                ATTACK PATHS
-              </div>
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                  <thead>
-                    <tr>
-                      {["PATH ID", "ORIGIN → TARGET", "SEVERITY", "CONFIDENCE", "STATUS"].map((h) => (
-                        <th
-                          key={h}
-                          style={{
-                            fontFamily: "'JetBrains Mono', monospace",
-                            fontSize: 10,
-                            color: "var(--adv-text-muted)",
-                            textTransform: "uppercase",
-                            letterSpacing: 1,
-                            padding: "10px 12px",
-                            textAlign: "left",
-                            borderBottom: "1px solid var(--adv-border)",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {attackPaths.map((path, i) => (
-                      <tr
-                        key={path.id}
-                        style={{
-                          transition: "background 0.15s ease",
-                        }}
-                        className="hover:bg-[rgba(37,99,235,0.02)]"
-                      >
-                        <td
-                          style={{
-                            padding: "10px 12px",
-                            fontFamily: "'JetBrains Mono', monospace",
-                            fontSize: 11,
-                            color: "var(--adv-accent)",
-                            borderBottom: i < attackPaths.length - 1 ? "1px solid rgba(37,99,235,0.06)" : "none",
-                          }}
-                        >
-                          {path.id}
-                        </td>
-                        <td
-                          style={{
-                            padding: "10px 12px",
-                            fontFamily: "'JetBrains Mono', monospace",
-                            fontSize: 11,
-                            color: "var(--adv-text)",
-                            borderBottom: i < attackPaths.length - 1 ? "1px solid rgba(37,99,235,0.06)" : "none",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          <span style={{ color: "var(--adv-text-muted)" }}>{path.origin}</span>
-                          <span style={{ color: "var(--adv-border)", margin: "0 6px" }}>→</span>
-                          <span style={{ color: "var(--adv-text)" }}>{path.target}</span>
-                        </td>
-                        <td
-                          style={{
-                            padding: "10px 12px",
-                            borderBottom: i < attackPaths.length - 1 ? "1px solid rgba(37,99,235,0.06)" : "none",
-                          }}
-                        >
-                          <span
-                            style={{
-                              fontFamily: "'JetBrains Mono', monospace",
-                              fontSize: 10,
-                              padding: "2px 8px",
-                              borderRadius: 4,
-                              background: `${severityColor(path.severity)}15`,
-                              color: severityColor(path.severity),
-                              letterSpacing: 0.5,
-                            }}
-                          >
-                            {path.severity}
+            <GlowCard delay={240}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ background: "var(--bg-sidebar)" }}>
+                    {["Path", "Route", "Severity", "Confidence", "Status"].map((h) => (
+                      <th key={h} style={{
+                        padding: "9px 20px", textAlign: "left",
+                        fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 600,
+                        color: "var(--text-muted)", letterSpacing: 0.3,
+                        borderBottom: "0.5px solid var(--border-subtle)", whiteSpace: "nowrap",
+                      }}>
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {ATTACK_PATHS.map((p, i) => {
+                    const ss  = PATH_STATUS[p.status];
+                    const sev = SEV_LABEL[p.severity];
+                    return (
+                      <tr key={p.id} className="table-row-hover stagger-item" style={{
+                        animationDelay: `${280 + i * 40}ms`,
+                        borderBottom: i < ATTACK_PATHS.length - 1 ? "0.5px solid var(--border-subtle)" : "none",
+                        cursor: "pointer",
+                      }}>
+                        <td style={{ padding: "11px 20px" }}>
+                          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, color: "var(--accent)" }}>
+                            {p.id}
                           </span>
                         </td>
-                        <td
-                          style={{
-                            padding: "10px 12px",
-                            borderBottom: i < attackPaths.length - 1 ? "1px solid rgba(37,99,235,0.06)" : "none",
-                          }}
-                        >
-                          <ConfidenceBar value={path.confidence} />
+                        <td style={{ padding: "11px 20px", whiteSpace: "nowrap" }}>
+                          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: "var(--text-secondary)" }}>{p.origin}</span>
+                          <ArrowRight size={11} style={{ margin: "0 6px", color: "var(--text-muted)", verticalAlign: "middle" }} />
+                          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: "var(--text-primary)", fontWeight: 600 }}>{p.target}</span>
                         </td>
-                        <td
-                          style={{
-                            padding: "10px 12px",
-                            borderBottom: i < attackPaths.length - 1 ? "1px solid rgba(37,99,235,0.06)" : "none",
-                          }}
-                        >
-                          <span
-                            style={{
-                              fontFamily: "'JetBrains Mono', monospace",
-                              fontSize: 10,
-                              padding: "2px 8px",
-                              borderRadius: 4,
-                              background: statusColor(path.status),
-                              color: statusTextColor(path.status),
-                              letterSpacing: 0.5,
-                            }}
-                          >
-                            {path.status}
+                        <td style={{ padding: "11px 20px" }}>
+                          <span style={{
+                            fontFamily: "'Inter', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
+                            color: sev.color, background: sev.bg, borderRadius: 5, padding: "2px 8px",
+                            textTransform: "uppercase",
+                          }}>
+                            {p.severity}
+                          </span>
+                        </td>
+                        <td style={{ padding: "11px 20px" }}>
+                          <ConfidenceBar value={p.confidence} />
+                        </td>
+                        <td style={{ padding: "11px 20px" }}>
+                          <span style={{
+                            fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 600,
+                            color: ss.color, background: ss.bg, borderRadius: 6, padding: "3px 9px",
+                          }}>
+                            {p.status}
                           </span>
                         </td>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </GlowCard>
+          </div>
 
-            {/* RIGHT: Multi-Agent Framework */}
-            <div
-              style={{
-                background: "linear-gradient(160deg, rgba(37,99,235,0.05) 0%, var(--adv-panel) 50%)",
-                border: "1px solid var(--adv-border)",
-                borderRadius: 6,
-                overflow: "hidden",
-                display: "flex",
-                flexDirection: "column",
-              }}
-            >
-              <div
-                style={{
-                  padding: "12px 16px",
-                  borderBottom: "1px solid var(--adv-border)",
-                  background: "linear-gradient(90deg, rgba(37,99,235,0.06) 0%, transparent 70%)",
-                  fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: 12,
-                  color: "var(--adv-text)",
-                  letterSpacing: 1,
-                }}
-              >
-                MULTI-AGENT FRAMEWORK
-              </div>
-              <div style={{ padding: "8px 0", flex: 1 }}>
-                {agents.map((agent, i) => (
-                  <div
-                    key={agent.name}
+          {/* Agent Monitor */}
+          <div>
+            <SectionHeader delay={220} icon={<Cpu size={15} />} title="Agent Monitor" />
+            <GlowCard delay={260} style={{ height: "auto" }}>
+              {AGENTS.map((agent, i) => {
+                const as_ = AGENT_STATUS[agent.status];
+                const [rowHovered, setRowHovered] = useState(false);
+                return (
+                  <div key={agent.name} className="stagger-item"
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 10,
-                      padding: "10px 16px",
-                      borderBottom: i < agents.length - 1 ? "1px solid rgba(37,99,235,0.06)" : "none",
-                      transition: "background 0.15s ease",
+                      animationDelay: `${300 + i * 40}ms`,
+                      display: "flex", alignItems: "center", gap: 12,
+                      padding: "13px 20px",
+                      borderBottom: i < AGENTS.length - 1 ? "0.5px solid var(--border-subtle)" : "none",
+                      transition: "background 0.12s ease",
+                      background: rowHovered ? "var(--bg-surface)" : "transparent",
                       cursor: "default",
                     }}
-                    className="hover:bg-[rgba(37,99,235,0.02)]"
+                    onMouseEnter={() => setRowHovered(true)}
+                    onMouseLeave={() => setRowHovered(false)}
                   >
-                    <StatusDot status={agent.status} />
+                    {/* Status dot with ring */}
+                    <div className="status-dot">
+                      {as_.pulse && (
+                        <span className="status-dot-ring" style={{
+                          background: as_.glow,
+                          opacity: rowHovered ? 1 : 0.6,
+                          transition: "opacity 0.2s ease",
+                        }} />
+                      )}
+                      <span className={`status-dot-core ${as_.pulse ? "animate-pulse-dot" : ""}`}
+                        style={{ background: as_.color, width: 7, height: 7 }} />
+                    </div>
+
                     <div style={{ minWidth: 0, flex: 1 }}>
-                      <div
-                        style={{
-                          fontFamily: "'JetBrains Mono', monospace",
-                          fontSize: 12,
-                          color: "var(--adv-text)",
-                          letterSpacing: 0.3,
-                        }}
-                      >
+                      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 500, color: "var(--text-primary)", marginBottom: 2 }}>
                         {agent.name}
                       </div>
-                      <div
-                        style={{
-                          fontFamily: "'JetBrains Mono', monospace",
-                          fontSize: 10,
-                          color: "var(--adv-text-muted)",
-                          marginTop: 2,
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                        }}
-                      >
+                      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                         {agent.activity}
                       </div>
                     </div>
+
+                    <span style={{
+                      fontFamily: "'Inter', sans-serif", fontSize: 10, fontWeight: 700,
+                      color: as_.color,
+                      background: as_.pulse ? `color-mix(in srgb, ${as_.color} 12%, transparent)` : "var(--bg-hover)",
+                      borderRadius: 5, padding: "2px 7px", flexShrink: 0,
+                      transition: "transform 0.18s var(--ease-spring)",
+                      transform: rowHovered ? "scale(1.06)" : "scale(1)",
+                    }}>
+                      {agent.status}
+                    </span>
                   </div>
-                ))}
+                );
+              })}
+            </GlowCard>
+          </div>
+        </div>
+
+        {/* ── SLA + Protocol + Zone ── */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 240px 240px", gap: 16 }}>
+
+          {/* SLA Tracker */}
+          <div>
+            <SectionHeader delay={360} icon={<Clock size={15} />} title="SLA Status" />
+            <GlowCard delay={400}>
+              {/* Summary strip */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", borderBottom: "0.5px solid var(--border-subtle)" }}>
+                {[
+                  { label: "Breached",  value: breachedCount, color: "var(--sev-critical-color)" },
+                  { label: "At risk",   value: SLA_FINDINGS.filter((f) => { const s = getSla(f.deadline, f.hoursTotal); return !s.breached && s.pct < 25; }).length, color: "var(--sev-high-color)" },
+                  { label: "Due <48h",  value: SLA_FINDINGS.filter((f) => { const s = getSla(f.deadline, f.hoursTotal); return !s.breached && s.pct < 50 && s.pct >= 25; }).length, color: "var(--sev-medium-color)" },
+                  { label: "On track",  value: SLA_FINDINGS.filter((f) => { const s = getSla(f.deadline, f.hoursTotal); return !s.breached && s.pct >= 50; }).length, color: "var(--accent)" },
+                ].map((m, i) => {
+                  const [cellHovered, setCellHovered] = useState(false);
+                  return (
+                    <div key={m.label}
+                      style={{
+                        padding: "14px 16px", textAlign: "center", cursor: "default",
+                        borderRight: i < 3 ? "0.5px solid var(--border-subtle)" : "none",
+                        background: cellHovered ? "var(--bg-surface)" : "transparent",
+                        transition: "background 0.12s ease",
+                      }}
+                      onMouseEnter={() => setCellHovered(true)}
+                      onMouseLeave={() => setCellHovered(false)}
+                    >
+                      <div style={{
+                        fontFamily: "'Inter', sans-serif", fontSize: 24, fontWeight: 700, color: m.color, lineHeight: 1, marginBottom: 4,
+                        transition: "transform 0.18s var(--ease-spring)",
+                        transform: cellHovered ? "scale(1.08)" : "scale(1)",
+                      }}>
+                        {m.value}
+                      </div>
+                      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 10, color: "var(--text-muted)", fontWeight: 500 }}>
+                        {m.label}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            </div>
+
+              {/* SLA rows */}
+              {SLA_FINDINGS.map((f, i) => {
+                const s = getSla(f.deadline, f.hoursTotal);
+                const [rowHovered, setRowHovered] = useState(false);
+                return (
+                  <div key={f.id} className="stagger-item"
+                    style={{
+                      animationDelay: `${440 + i * 40}ms`,
+                      display: "flex", alignItems: "center", gap: 12, padding: "10px 20px",
+                      borderBottom: i < SLA_FINDINGS.length - 1 ? "0.5px solid var(--border-subtle)" : "none",
+                      transition: "background 0.12s ease",
+                      background: rowHovered ? "var(--bg-surface)" : "transparent",
+                      cursor: "default",
+                    }}
+                    onMouseEnter={() => setRowHovered(true)}
+                    onMouseLeave={() => setRowHovered(false)}
+                  >
+                    <span style={{
+                      fontFamily: "'Inter', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
+                      color: { CRITICAL: "var(--sev-critical-color)", HIGH: "var(--sev-high-color)", MEDIUM: "var(--sev-medium-color)" }[f.severity],
+                      background: { CRITICAL: "var(--sev-critical-bg)", HIGH: "var(--sev-high-bg)", MEDIUM: "var(--sev-medium-bg)" }[f.severity],
+                      borderRadius: 5, padding: "2px 7px", flexShrink: 0, textTransform: "uppercase" as const,
+                    }}>
+                      {f.severity}
+                    </span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginBottom: 5 }}>
+                        {f.title}
+                      </div>
+                      <div className="progress-track" style={{ height: 3 }}>
+                        <div className={`progress-fill ${s.breached ? "sla-pulse" : ""}`}
+                          style={{ width: `${s.pct}%`, background: s.color }} />
+                      </div>
+                    </div>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 700, color: s.color, flexShrink: 0, minWidth: 56, textAlign: "right" }}>
+                      {s.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </GlowCard>
           </div>
 
-          {/* SECTION C — Three Columns */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-              gap: 16,
-            }}
-          >
-            {/* Col 1 — Protocol Abuse Engine */}
-            <div
-              style={{
-                background: "linear-gradient(160deg, rgba(37,99,235,0.05) 0%, var(--adv-panel) 50%)",
-                border: "1px solid var(--adv-border)",
-                borderRadius: 6,
-                overflow: "hidden",
-              }}
-            >
-              <div
-                style={{
-                  padding: "12px 16px",
-                  borderBottom: "1px solid var(--adv-border)",
-                  background: "linear-gradient(90deg, rgba(37,99,235,0.06) 0%, transparent 70%)",
-                  fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: 12,
-                  color: "var(--adv-text)",
-                  letterSpacing: 1,
-                }}
-              >
-                PROTOCOL ABUSE ENGINE
-              </div>
-              <div style={{ padding: "8px 0" }}>
-                {protocols.map((p, i) => (
-                  <div
-                    key={p.name}
+          {/* Protocol Risk */}
+          <div>
+            <SectionHeader delay={380} icon={<Activity size={15} />} title="Protocol Risk" />
+            <GlowCard delay={420}>
+              {PROTOCOLS.map((p, i) => {
+                const [rowHovered, setRowHovered] = useState(false);
+                return (
+                  <div key={p.name} className="stagger-item"
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 12,
-                      padding: "10px 16px",
-                      borderBottom: i < protocols.length - 1 ? "1px solid rgba(37,99,235,0.06)" : "none",
+                      animationDelay: `${460 + i * 40}ms`,
+                      padding: "13px 20px", display: "flex", flexDirection: "column", gap: 8,
+                      borderBottom: i < PROTOCOLS.length - 1 ? "0.5px solid var(--border-subtle)" : "none",
+                      transition: "background 0.12s ease",
+                      background: rowHovered ? "var(--bg-surface)" : "transparent",
+                      cursor: "default",
                     }}
+                    onMouseEnter={() => setRowHovered(true)}
+                    onMouseLeave={() => setRowHovered(false)}
                   >
-                    <span
-                      style={{
-                        fontFamily: "'JetBrains Mono', monospace",
-                        fontSize: 12,
-                        color: "var(--adv-text)",
-                        width: 60,
-                        flexShrink: 0,
-                      }}
-                    >
-                      {p.name}
-                    </span>
-                    <div
-                      style={{
-                        flex: 1,
-                        height: 3,
-                        background: "rgba(37,99,235,0.06)",
-                        borderRadius: 1,
-                        overflow: "hidden",
-                      }}
-                    >
-                      <div
-                        style={{
-                          height: "100%",
-                          width: `${p.value}%`,
-                          background: barColor(p.value),
-                          borderRadius: 1,
-                        }}
-                      />
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, fontWeight: 600, color: "var(--text-primary)" }}>{p.name}</span>
+                      <span style={{
+                        fontFamily: "'JetBrains Mono', monospace", fontSize: 12, fontWeight: 700,
+                        color: riskColor(p.value),
+                        transition: "transform 0.18s var(--ease-spring)",
+                        transform: rowHovered ? "scale(1.1)" : "scale(1)",
+                        display: "inline-block",
+                      }}>
+                        {p.value}%
+                      </span>
                     </div>
-                    <span
-                      style={{
-                        fontFamily: "'JetBrains Mono', monospace",
-                        fontSize: 11,
-                        color: barColor(p.value),
-                        width: 35,
-                        textAlign: "right",
-                        flexShrink: 0,
-                      }}
-                    >
-                      {p.value}%
-                    </span>
+                    <div className="progress-track" style={{ height: 5 }}>
+                      <div className="progress-fill" style={{ width: `${p.value}%`, background: riskColor(p.value) }} />
+                    </div>
                   </div>
-                ))}
-              </div>
-            </div>
+                );
+              })}
+            </GlowCard>
+          </div>
 
-            {/* Col 2 — Segmentation Validator */}
-            <div
-              style={{
-                background: "linear-gradient(160deg, rgba(37,99,235,0.05) 0%, var(--adv-panel) 50%)",
-                border: "1px solid var(--adv-border)",
-                borderRadius: 6,
-                overflow: "hidden",
-              }}
-            >
-              <div
-                style={{
-                  padding: "12px 16px",
-                  borderBottom: "1px solid var(--adv-border)",
-                  background: "linear-gradient(90deg, rgba(37,99,235,0.06) 0%, transparent 70%)",
-                  fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: 12,
-                  color: "var(--adv-text)",
-                  letterSpacing: 1,
-                }}
-              >
-                SEGMENTATION VALIDATOR
-              </div>
-              <div style={{ padding: "8px 0" }}>
-                {zones.map((z, i) => (
-                  <div
-                    key={z.name}
+          {/* Zone Health */}
+          <div>
+            <SectionHeader delay={400} icon={<Shield size={15} />} title="Zone Health" />
+            <GlowCard delay={440}>
+              {ZONES.map((z, i) => {
+                const health = z.score >= 90 ? "var(--accent)" : z.score >= 75 ? "var(--sev-medium-color)" : "var(--sev-critical-color)";
+                const [rowHovered, setRowHovered] = useState(false);
+                return (
+                  <div key={z.name} className="stagger-item"
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 12,
-                      padding: "10px 16px",
-                      borderBottom: i < zones.length - 1 ? "1px solid rgba(37,99,235,0.06)" : "none",
+                      animationDelay: `${480 + i * 40}ms`,
+                      padding: "13px 20px", display: "flex", alignItems: "center", gap: 12,
+                      borderBottom: i < ZONES.length - 1 ? "0.5px solid var(--border-subtle)" : "none",
+                      transition: "background 0.12s ease",
+                      background: rowHovered ? "var(--bg-surface)" : "transparent",
+                      cursor: "default",
                     }}
+                    onMouseEnter={() => setRowHovered(true)}
+                    onMouseLeave={() => setRowHovered(false)}
                   >
-                    <span
-                      style={{
-                        fontFamily: "'JetBrains Mono', monospace",
-                        fontSize: 12,
-                        color: "var(--adv-text)",
-                        width: 50,
-                        flexShrink: 0,
-                      }}
-                    >
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, fontWeight: 600, color: "var(--text-primary)", width: 42, flexShrink: 0 }}>
                       {z.name}
                     </span>
-                    <div
-                      style={{
-                        flex: 1,
-                        height: 3,
-                        background: "rgba(37,99,235,0.06)",
-                        borderRadius: 1,
-                        overflow: "hidden",
-                      }}
-                    >
-                      <div
-                        style={{
-                          height: "100%",
-                          width: `${z.score}%`,
-                          background: barColor(z.score),
-                          borderRadius: 1,
-                        }}
-                      />
+                    <div className="progress-track" style={{ flex: 1, height: 5 }}>
+                      <div className="progress-fill" style={{ width: `${z.score}%`, background: health }} />
                     </div>
-                    <span
-                      style={{
-                        fontFamily: "'JetBrains Mono', monospace",
-                        fontSize: 11,
-                        color: barColor(z.score),
-                        width: 35,
-                        textAlign: "right",
-                        flexShrink: 0,
-                      }}
-                    >
-                      {z.score}%
+                    <span style={{
+                      fontFamily: "'JetBrains Mono', monospace", fontSize: 12, fontWeight: 700,
+                      color: health, minWidth: 32, textAlign: "right",
+                      transition: "transform 0.18s var(--ease-spring)",
+                      transform: rowHovered ? "scale(1.1)" : "scale(1)",
+                      display: "inline-block",
+                    }}>
+                      {z.score}
                     </span>
                   </div>
-                ))}
+                );
+              })}
+              <div style={{
+                padding: "12px 20px",
+                borderTop: "0.5px solid var(--border-subtle)",
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+              }}>
+                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: "var(--text-muted)" }}>Avg confidence</span>
+                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 24, fontWeight: 700, color: "var(--accent)", lineHeight: 1 }}>87%</span>
               </div>
-            </div>
-
-            {/* Col 3 — Evidence Confidence */}
-            <div
-              style={{
-                background: "linear-gradient(160deg, rgba(37,99,235,0.05) 0%, var(--adv-panel) 50%)",
-                border: "1px solid var(--adv-border)",
-                borderRadius: 6,
-                overflow: "hidden",
-                display: "flex",
-                flexDirection: "column",
-              }}
-            >
-              <div
-                style={{
-                  padding: "12px 16px",
-                  borderBottom: "1px solid var(--adv-border)",
-                  background: "linear-gradient(90deg, rgba(37,99,235,0.06) 0%, transparent 70%)",
-                  fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: 12,
-                  color: "var(--adv-text)",
-                  letterSpacing: 1,
-                }}
-              >
-                EVIDENCE CONFIDENCE
-              </div>
-              <div
-                style={{
-                  flex: 1,
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  padding: "20px",
-                  gap: 4,
-                }}
-              >
-                <span
-                  style={{
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: 48,
-                    fontWeight: 700,
-                    color: "var(--adv-accent)",
-                    lineHeight: 1,
-                  }}
-                >
-                  87%
-                </span>
-                <span
-                  style={{
-                    fontFamily: "'JetBrains Mono', monospace",
-                    fontSize: 10,
-                    color: "var(--adv-text-muted)",
-                    letterSpacing: 2,
-                    marginTop: 4,
-                  }}
-                >
-                  AVG CONFIDENCE
-                </span>
-              </div>
-              <div style={{ padding: "12px 16px", borderTop: "1px solid var(--adv-border)" }}>
-                {evidenceBreakdown.map((e) => (
-                  <div
-                    key={e.label}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      padding: "4px 0",
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontFamily: "'JetBrains Mono', monospace",
-                        fontSize: 10,
-                        color: "var(--adv-text-muted)",
-                      }}
-                    >
-                      {e.label}
-                    </span>
-                    <span
-                      style={{
-                        fontFamily: "'JetBrains Mono', monospace",
-                        fontSize: 11,
-                        color: barColor(e.value),
-                      }}
-                    >
-                      {e.value}%
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
+            </GlowCard>
           </div>
-        </main>
+        </div>
 
-        {/* ─── Bottom Status Bar ─── */}
-        <footer
-          style={{
-            height: 32,
-            borderTop: "1px solid var(--adv-border)",
-            background: "linear-gradient(90deg, rgba(37,99,235,0.06) 0%, var(--adv-panel) 60%)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "0 20px",
-            flexShrink: 0,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)" }}>
-              ENGINE <span style={{ color: "#059669" }}>●</span> NOMINAL
-            </span>
-            <span style={{ color: "var(--adv-border)" }}>|</span>
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)" }}>
-              API <span style={{ color: "#059669" }}>●</span> ONLINE
-            </span>
-            <span style={{ color: "var(--adv-border)" }}>|</span>
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)" }}>
-              DB <span style={{ color: "#059669" }}>●</span> CONNECTED
-            </span>
-          </div>
-
-          <div
-            style={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: 10,
-              color: "var(--adv-text-muted)",
-              textAlign: "center",
-              flex: 1,
-              overflow: "hidden",
-            }}
-          >
-            <span className="animate-blink">{tickerMessages[tickerIndex]}</span>
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)" }}>
-              {utcTime}
-            </span>
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)" }}>
-              ADVERSA v0.9.1
-            </span>
-          </div>
-        </footer>
       </div>
-    </div>
+    </PageShell>
   );
 }

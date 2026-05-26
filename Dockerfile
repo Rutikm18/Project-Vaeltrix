@@ -7,9 +7,6 @@
 FROM node:22-alpine AS deps
 WORKDIR /app
 
-# Install libc compat for Alpine + build tools for native modules
-RUN apk add --no-cache libc6-compat
-
 COPY package.json package-lock.json* ./
 
 # ci install is reproducible; uses lockfile exactly
@@ -43,6 +40,31 @@ RUN addgroup --system --gid 1001 nodejs \
 
 # Writable data directory for findings/cases JSON stores
 RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
+
+# ── Scanning tools ───────────────────────────────────────────────────────────
+# nmap — service/OS fingerprinting, NSE vuln scripts
+RUN apk add --no-cache nmap nmap-scripts bash curl unzip ca-certificates openssl
+
+# naabu — fast port scanner (pure-Go static binary, works on Alpine)
+RUN ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/') && \
+    curl -sSfL "https://github.com/projectdiscovery/naabu/releases/download/v2.3.1/naabu_2.3.1_linux_${ARCH}.zip" \
+      -o /tmp/naabu.zip && \
+    unzip -q /tmp/naabu.zip naabu -d /usr/local/bin && \
+    rm /tmp/naabu.zip && chmod +x /usr/local/bin/naabu
+
+# nuclei — CVE/misconfiguration scanner, pre-fetch templates into /opt
+RUN ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/') && \
+    curl -sSfL "https://github.com/projectdiscovery/nuclei/releases/download/v3.3.2/nuclei_3.3.2_linux_${ARCH}.zip" \
+      -o /tmp/nuclei.zip && \
+    unzip -q /tmp/nuclei.zip nuclei -d /usr/local/bin && \
+    rm /tmp/nuclei.zip && chmod +x /usr/local/bin/nuclei && \
+    mkdir -p /opt/nuclei-templates && \
+    HOME=/opt nuclei -update-templates -silent 2>/dev/null || true && \
+    chmod -R o+rX /opt/nuclei-templates 2>/dev/null || true
+
+# testssl.sh — TLS cipher/cert analysis
+RUN curl -sSfL https://raw.githubusercontent.com/drwetter/testssl.sh/3.2/testssl.sh \
+      -o /usr/local/bin/testssl.sh && chmod +x /usr/local/bin/testssl.sh
 
 # Copy the standalone output (self-contained Node server)
 COPY --from=builder /app/public                           ./public

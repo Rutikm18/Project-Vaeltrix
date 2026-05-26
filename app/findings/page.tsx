@@ -2,9 +2,11 @@
 
 import React, { useState, useMemo, useCallback } from "react";
 import {
-  AlertTriangle, ChevronDown, ChevronRight, Copy, Check,
-  Search, Filter, CheckCircle, XCircle, Clock, Shield,
-  ExternalLink, ArrowUpDown, BarChart2, FileText,
+  AlertTriangle, ChevronRight, Copy, Check,
+  Search, CheckCircle, XCircle, Clock, Shield,
+  ArrowUpDown, Zap, Target, Eye, TrendingUp,
+  AlertCircle, Activity, Link2, Brain, Tag,
+  ChevronDown, ChevronUp, Radio,
 } from "lucide-react";
 import { PageShell } from "../../components/PageShell";
 import { useToast } from "../../hooks/useToast";
@@ -12,9 +14,22 @@ import { useToast } from "../../hooks/useToast";
 /* ─── Types ─── */
 type Severity = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "INFO";
 type FindingStatus = "OPEN" | "IN_REVIEW" | "IN_REMEDIATION" | "VERIFIED" | "CLOSED" | "ACCEPTED" | "FALSE_POSITIVE";
+type ExploitMaturity = "WEAPONIZED" | "POC" | "THEORETICAL";
+type DetectionCoverage = "COVERED" | "PARTIAL" | "BLIND";
 
-interface RemStep { step: number; title: string; command?: string; description: string; estimatedHours: number; verification?: string; completed: boolean; completedBy?: string; }
+interface RemStep {
+  step: number; title: string; command?: string;
+  description: string; estimatedHours: number;
+  verification?: string; completed: boolean; completedBy?: string;
+}
 interface ComplianceRef { framework: string; refs: string[]; }
+interface RiskBreakdown {
+  cvss: number; epss: number; kev: number;
+  exploit: number; asset: number; lateral: number;
+}
+interface KillChainStep {
+  phase: string; technique: string; description: string; mitre?: string;
+}
 interface Finding {
   id: string; title: string; severity: Severity; cvss: string; cvssVector: string;
   category: string; status: FindingStatus; affectedHost: string; discoveredAt: string;
@@ -25,33 +40,57 @@ interface Finding {
   remediation: (string | RemStep)[];
   compliance: ComplianceRef[];
   mitre: { id: string; name: string }[];
-  riskScore?: number;
+  riskScore: number;
+  riskBreakdown: RiskBreakdown;
+  epssScore: number;
+  epssPercentile: number;
+  kevListed: boolean;
+  kevDateAdded?: string;
+  exploitMaturity: ExploitMaturity;
+  pocAvailable: boolean;
+  activelyExploited: boolean;
+  detectionCoverage: DetectionCoverage;
+  detectionNote?: string;
+  fpProbability: number;
+  relatedFindings?: string[];
+  killChain: KillChainStep[];
+  assignee?: string;
+  tags?: string[];
+  aiTriage: { priority: "P0" | "P1" | "P2" | "P3"; reasoning: string; recommendation: string; confidence: number };
 }
 
 /* ─── Color Maps ─── */
 const SEV_COLOR: Record<Severity, string> = {
   CRITICAL: "#FF1744", HIGH: "#FF6D00", MEDIUM: "#FFD600", LOW: "#00E676", INFO: "#0284C7",
 };
-
 const STATUS_COLOR: Record<FindingStatus, string> = {
-  OPEN:          "#FF1744",
-  IN_REVIEW:     "#FF9900",
-  IN_REMEDIATION:"#2563EB",
-  VERIFIED:      "#059669",
-  CLOSED:        "#64748B",
-  ACCEPTED:      "#9C27B0",
-  FALSE_POSITIVE:"#64748B",
+  OPEN: "#FF1744", IN_REVIEW: "#FF9900", IN_REMEDIATION: "#2563EB",
+  VERIFIED: "#059669", CLOSED: "#64748B", ACCEPTED: "#9C27B0", FALSE_POSITIVE: "#64748B",
 };
-
 const STATUS_LABEL: Record<FindingStatus, string> = {
   OPEN: "OPEN", IN_REVIEW: "IN REVIEW", IN_REMEDIATION: "REMEDIATING",
   VERIFIED: "VERIFIED", CLOSED: "CLOSED", ACCEPTED: "ACCEPTED", FALSE_POSITIVE: "FALSE POS.",
+};
+const MATURITY_COLOR: Record<ExploitMaturity, string> = {
+  WEAPONIZED: "#FF1744", POC: "#FF6D00", THEORETICAL: "#64748B",
+};
+const COVERAGE_COLOR: Record<DetectionCoverage, string> = {
+  COVERED: "#059669", PARTIAL: "#FFD600", BLIND: "#FF1744",
+};
+const PRIORITY_COLOR: Record<string, string> = {
+  P0: "#FF1744", P1: "#FF6D00", P2: "#FFD600", P3: "#64748B",
+};
+const KILL_CHAIN_PHASE_COLOR: Record<string, string> = {
+  "Reconnaissance": "#64748B", "Initial Access": "#FF6D00", "Execution": "#FF1744",
+  "Persistence": "#9C27B0", "Privilege Escalation": "#FF1744", "Defense Evasion": "#FFD600",
+  "Credential Access": "#FF6D00", "Discovery": "#2563EB", "Lateral Movement": "#FF6D00",
+  "Collection": "#2563EB", "Exfiltration": "#FF1744", "Impact": "#FF1744",
 };
 
 /* ─── SLA helpers ─── */
 const SLA_HOURS: Partial<Record<Severity, number>> = { CRITICAL: 24, HIGH: 72, MEDIUM: 168, LOW: 720 };
 
-function getSlaColor(discoveredAt: string, severity: Severity): { color: string; label: string; pct: number } {
+function getSlaColor(discoveredAt: string, severity: Severity) {
   const slaH = SLA_HOURS[severity];
   if (!slaH) return { color: "var(--adv-text-muted)", label: "N/A", pct: 100 };
   const due = new Date(discoveredAt).getTime() + slaH * 3_600_000;
@@ -63,6 +102,13 @@ function getSlaColor(discoveredAt: string, severity: Severity): { color: string;
   const label = h < 24 ? `${h}h` : `${Math.round(h / 24)}d`;
   const color = pct < 10 ? "#FF1744" : pct < 25 ? "#FF6D00" : pct < 50 ? "#FFD600" : "#00E676";
   return { color, label, pct };
+}
+
+function riskScoreColor(score: number): string {
+  if (score >= 800) return "#FF1744";
+  if (score >= 600) return "#FF6D00";
+  if (score >= 400) return "#FFD600";
+  return "#00E676";
 }
 
 /* ─── Static data ─── */
@@ -77,27 +123,60 @@ const FINDINGS: Finding[] = [
     discoveredAt: "2026-05-10T09:32:00Z",
     businessImpact: "Complete domain takeover — all 842 user accounts, file shares, and business-critical systems compromised.",
     exploitability: "EASY",
-    riskScore: 98,
+    riskScore: 961,
+    riskBreakdown: { cvss: 245, epss: 186, kev: 200, exploit: 150, asset: 100, lateral: 50 },
+    epssScore: 0.9302,
+    epssPercentile: 0.9981,
+    kevListed: true,
+    kevDateAdded: "2023-03-15",
+    exploitMaturity: "WEAPONIZED",
+    pocAvailable: true,
+    activelyExploited: true,
+    detectionCoverage: "PARTIAL",
+    detectionNote: "TGT delegation events (4769/4624) not alerting. Spooler coercion undetected.",
+    fpProbability: 0.02,
+    relatedFindings: ["VAPT-CRIT-002"],
+    tags: ["kerberos", "domain-admin", "ad-attack", "kev"],
+    assignee: "Priya Sharma",
+    aiTriage: {
+      priority: "P0",
+      reasoning: "CISA KEV listed, weaponized exploit, EPSS 99th percentile — highest exploitation likelihood. Unconstrained delegation on a DC is a single-step domain compromise vector. Active exploitation confirmed in wild.",
+      recommendation: "Immediate 24h remediation. Disable Spooler on DC01 first (30min fix) to remove coercion vector. Then remove TrustedForDelegation flag. Enroll in Protected Users group. Rotate krbtgt twice.",
+      confidence: 0.97,
+    },
     description: "DC01 is configured with Unconstrained Kerberos Delegation (TrustedForDelegation=TRUE). Any user authenticating to a service on DC01 has their TGT cached in LSASS, extractable by any local admin — enabling full domain compromise via ticket replay.",
     technicalDetails: "The attribute TrustedForDelegation is TRUE on DC01. Combined with SpoolSS coercion, an attacker captures the DC01 machine TGT and performs DCSync to extract all domain hashes.",
     attackPath: "WS-042 → SpoolSS Coerce → DC01 TGT → mimikatz lsadump::dcsync → All NTLM hashes → Domain Admin",
+    killChain: [
+      { phase: "Initial Access", technique: "Valid Accounts", description: "Low-priv domain user on WS-042", mitre: "T1078" },
+      { phase: "Lateral Movement", technique: "SpoolSS Coercion", description: "Force DC01 to authenticate to attacker host via Print Spooler", mitre: "T1187" },
+      { phase: "Credential Access", technique: "Unconstrained Delegation", description: "Extract DC01 TGT from LSASS via delegation", mitre: "T1558.003" },
+      { phase: "Privilege Escalation", technique: "DCSync", description: "Replicate all domain hashes using DC01 machine account", mitre: "T1003.006" },
+      { phase: "Impact", technique: "Golden Ticket", description: "Forge Kerberos tickets for any account — persistent domain admin", mitre: "T1558.001" },
+    ],
     evidence: [
       { label: "AD Attribute Query", content: "PS> Get-ADComputer DC01 -Properties TrustedForDelegation\nTrustedForDelegation : True  ← VULNERABILITY" },
       { label: "DCSync Attack", content: "mimikatz # lsadump::dcsync /domain:corp.local /all /csv\n...842 accounts extracted" },
     ],
     impact: "Complete domain compromise. Golden Ticket persistence, full credential harvest of 842 accounts.",
     remediation: [
-      { step: 1, title: "Disable unconstrained delegation", command: "Set-ADComputer DC01 -TrustedForDelegation $false", description: "Remove TrustedForDelegation from DC01 computer object.", estimatedHours: 0.5, verification: "Get-ADComputer DC01 -Properties TrustedForDelegation | Select TrustedForDelegation", completed: false },
-      { step: 2, title: "Enroll DC01 in Protected Users", command: "Add-ADGroupMember 'Protected Users' -Members DC01$", description: "Prevents Kerberos delegation for the computer account.", estimatedHours: 0.5, completed: false },
-      { step: 3, title: "Disable SpoolSS on DCs", command: "Stop-Service Spooler -Force; Set-Service Spooler -StartupType Disabled", description: "Eliminates the coercion vector.", estimatedHours: 1, verification: "Get-Service Spooler | Select Status", completed: false },
-      { step: 4, title: "Deploy Credential Guard", description: "Enable Credential Guard via GPO to protect LSASS on all DCs.", estimatedHours: 4, completed: false },
-      { step: 5, title: "Alert on Event ID 4768 from non-DCs", description: "SIEM rule: TGT requests originating from non-DC machines.", estimatedHours: 2, completed: false },
+      { step: 1, title: "Disable SpoolSS on DCs", command: "Stop-Service Spooler -Force; Set-Service Spooler -StartupType Disabled", description: "Eliminates the coercion vector immediately.", estimatedHours: 0.5, verification: "Get-Service Spooler | Select Status", completed: false },
+      { step: 2, title: "Disable unconstrained delegation", command: "Set-ADComputer DC01 -TrustedForDelegation $false", description: "Remove TrustedForDelegation from DC01 computer object.", estimatedHours: 0.5, verification: "Get-ADComputer DC01 -Properties TrustedForDelegation | Select TrustedForDelegation", completed: false },
+      { step: 3, title: "Enroll DC01 in Protected Users", command: "Add-ADGroupMember 'Protected Users' -Members DC01$", description: "Prevents Kerberos delegation for the computer account.", estimatedHours: 0.5, completed: false },
+      { step: 4, title: "Rotate krbtgt password twice", command: "Reset-KrbtgtKeyInteractive.ps1 -Domain corp.local", description: "Invalidates all existing golden/silver tickets.", estimatedHours: 2, completed: false },
+      { step: 5, title: "Deploy Credential Guard", description: "Enable Credential Guard via GPO to protect LSASS on all DCs.", estimatedHours: 4, completed: false },
+      { step: 6, title: "Alert on Event ID 4769 with etype 0x01", description: "SIEM rule: DES/RC4 TGS requests from delegation-enabled accounts.", estimatedHours: 2, completed: false },
     ],
     compliance: [
       { framework: "NIST SP 800-53 Rev 5", refs: ["AC-6 (Least Privilege)", "IA-5 (Authenticator Management)"] },
       { framework: "CIS Controls v8", refs: ["Control 5.4 — Restrict Administrator Privileges"] },
+      { framework: "MITRE D3FEND", refs: ["D3-KA: Kerberos Authentication Hardening"] },
     ],
-    mitre: [{ id: "T1558.003", name: "Kerberoasting" }, { id: "T1134.001", name: "Token Impersonation" }, { id: "T1003.006", name: "DCSync" }],
+    mitre: [
+      { id: "T1558.003", name: "Steal or Forge Kerberos Tickets: Kerberoasting" },
+      { id: "T1134.001", name: "Access Token Manipulation: Token Impersonation" },
+      { id: "T1003.006", name: "OS Credential Dumping: DCSync" },
+    ],
   },
   {
     id: "VAPT-CRIT-002",
@@ -109,20 +188,46 @@ const FINDINGS: Finding[] = [
     discoveredAt: "2026-05-10T10:14:00Z",
     businessImpact: "Domain Admin via offline credential cracking. Any domain user can initiate the attack.",
     exploitability: "EASY",
-    riskScore: 95,
+    riskScore: 882,
+    riskBreakdown: { cvss: 228, epss: 162, kev: 0, exploit: 150, asset: 100, lateral: 50 },
+    epssScore: 0.8121,
+    epssPercentile: 0.9876,
+    kevListed: false,
+    exploitMaturity: "WEAPONIZED",
+    pocAvailable: true,
+    activelyExploited: true,
+    detectionCoverage: "BLIND",
+    detectionNote: "No detection for TGS-REQ with etype 0x17 (RC4). No password spray alerts configured.",
+    fpProbability: 0.01,
+    relatedFindings: ["VAPT-CRIT-001"],
+    tags: ["kerberoasting", "service-account", "offline-crack", "domain-admin"],
+    assignee: "Marcus Lee",
+    aiTriage: {
+      priority: "P0",
+      reasoning: "Weaponized toolchain (Rubeus/Invoke-Kerberoast), RC4 hash cracked in 4h in testing. DA membership makes this a direct domain compromise. No detection coverage — attacker operates completely blind of defenders.",
+      recommendation: "Block RC4 for this account immediately (Set-ADUser -KerberosEncryptionType AES256). Remove DA membership in parallel. Migrate to gMSA this sprint. Priority over VAPT-CRIT-001 if patching capacity is limited — lower attack complexity.",
+      confidence: 0.95,
+    },
     description: "svc_backup has an SPN registered and uses RC4-HMAC encryption. Password cracked in 4h using Hashcat. The account is a Domain Admin member.",
     technicalDetails: "RC4-HMAC (etype 23) TGS tickets are optimized for offline cracking. Password set 14 months ago, no rotation policy.",
     attackPath: "Any user → Request TGS for svc_backup SPN → Export RC4 hash → Hashcat crack → Domain Admin",
+    killChain: [
+      { phase: "Credential Access", technique: "Kerberoasting", description: "Request TGS ticket for svc_backup SPN — any domain user can do this", mitre: "T1558.003" },
+      { phase: "Credential Access", technique: "Password Cracking", description: "Offline RC4-HMAC crack via Hashcat mask attack — 4h 7m to plaintext", mitre: "T1110.002" },
+      { phase: "Privilege Escalation", technique: "Domain Admin Access", description: "Authenticate as svc_backup → member of Domain Admins", mitre: "T1078.002" },
+      { phase: "Impact", technique: "Domain Persistence", description: "DCSync, Golden Ticket, AdminSDHolder backdoor", mitre: "T1003.006" },
+    ],
     evidence: [
       { label: "Kerberoasting", content: "PS> Invoke-Kerberoast -OutputFormat Hashcat\n$krb5tgs$23$*svc_backup$CORP.LOCAL...[RC4 hash]" },
       { label: "Password Cracked", content: "hashcat -m 13100: Backup@Corp2024! ← RECOVERED in 4h 7m" },
     ],
     impact: "Full domain compromise via service account credential recovery.",
     remediation: [
-      { step: 1, title: "Remove svc_backup from Domain Admins", command: "Remove-ADGroupMember 'Domain Admins' -Members svc_backup", description: "Principle of least privilege — service accounts must not be DAs.", estimatedHours: 0.5, verification: "Get-ADUser svc_backup -Properties MemberOf | Select -Expand MemberOf", completed: false },
-      { step: 2, title: "Force AES256 encryption", command: "Set-ADUser svc_backup -KerberosEncryptionType AES256", description: "Eliminates RC4 crack path — AES256 is computationally infeasible to crack.", estimatedHours: 0.5, verification: "Get-ADUser svc_backup -Properties msDS-SupportedEncryptionTypes", completed: false },
+      { step: 1, title: "Force AES256 encryption immediately", command: "Set-ADUser svc_backup -KerberosEncryptionType AES256", description: "Eliminates RC4 crack path — AES256 is computationally infeasible.", estimatedHours: 0.5, verification: "Get-ADUser svc_backup -Properties msDS-SupportedEncryptionTypes", completed: false },
+      { step: 2, title: "Remove svc_backup from Domain Admins", command: "Remove-ADGroupMember 'Domain Admins' -Members svc_backup", description: "Principle of least privilege — service accounts must not be DAs.", estimatedHours: 0.5, verification: "Get-ADUser svc_backup -Properties MemberOf | Select -Expand MemberOf", completed: false },
       { step: 3, title: "Reset password (25+ chars)", command: "Set-ADAccountPassword svc_backup -Reset -NewPassword (ConvertTo-SecureString (New-Guid).Guid -AsPlainText -Force)", description: "Immediately invalidate the cracked credential.", estimatedHours: 0.5, completed: false },
       { step: 4, title: "Migrate to Group Managed Service Account (gMSA)", description: "gMSA eliminates manual password management — auto-rotates every 30 days.", estimatedHours: 8, completed: false },
+      { step: 5, title: "SIEM: Alert on Event 4769 etype 0x17", description: "Detect future Kerberoasting attempts via RC4 TGS-REQ.", estimatedHours: 1, completed: false },
     ],
     compliance: [
       { framework: "NIST SP 800-53 Rev 5", refs: ["AC-6 (Least Privilege)", "IA-5 (Authenticator Management)"] },
@@ -138,26 +243,52 @@ const FINDINGS: Finding[] = [
     category: "Protocol Abuse", status: "IN_REMEDIATION",
     affectedHost: "10.10.10.0/24 CORP VLAN",
     discoveredAt: "2026-05-10T11:05:00Z",
-    businessImpact: "Any workstation credential can be captured and replayed for lateral movement. 67% of CORP hosts have SMB signing disabled.",
+    businessImpact: "Any workstation credential can be captured and relayed. 67% of CORP hosts have SMB signing disabled.",
     exploitability: "EASY",
-    riskScore: 82,
+    riskScore: 743,
+    riskBreakdown: { cvss: 203, epss: 140, kev: 200, exploit: 100, asset: 75, lateral: 50 },
+    epssScore: 0.7018,
+    epssPercentile: 0.9741,
+    kevListed: true,
+    kevDateAdded: "2022-07-28",
+    exploitMaturity: "WEAPONIZED",
+    pocAvailable: true,
+    activelyExploited: true,
+    detectionCoverage: "PARTIAL",
+    detectionNote: "Responder traffic partially detected by IDS. ntlmrelayx relay success undetected.",
+    fpProbability: 0.03,
+    relatedFindings: ["VAPT-HIGH-002"],
+    tags: ["llmnr", "ntlm-relay", "smb-signing", "responder"],
+    assignee: "Priya Sharma",
+    aiTriage: {
+      priority: "P1",
+      reasoning: "KEV listed, weaponized (Responder+ntlmrelayx), widespread impact across 67% of CORP VLAN. Partial detection gap. Relay was successfully demonstrated to SVC-SQL without cracking any password.",
+      recommendation: "GPO to disable LLMNR is already complete per checklist. Priority now: enforce SMB signing via GPO (all CORP hosts) + disable NBT-NS. These two controls break the relay chain completely.",
+      confidence: 0.91,
+    },
     description: "LLMNR and NBT-NS are enabled on all CORP workstations. An attacker in the broadcast domain can intercept queries, capture NTLMv2 hashes, and relay them to hosts with SMB signing disabled.",
     technicalDetails: "Responder + ntlmrelayx successfully relayed credentials to SVC-SQL, granting local admin shell without cracking any password.",
     attackPath: "CORP VLAN → LLMNR poison (Responder) → NTLMv2 capture → Relay to SVC-SQL → Local admin shell",
+    killChain: [
+      { phase: "Initial Access", technique: "Adversary-in-the-Middle", description: "Position in CORP broadcast domain — any workstation", mitre: "T1557.001" },
+      { phase: "Credential Access", technique: "LLMNR/NBT-NS Poisoning", description: "Intercept LLMNR queries and respond with attacker IP", mitre: "T1557.001" },
+      { phase: "Lateral Movement", technique: "Pass the Hash (Relay)", description: "Relay captured NTLMv2 hash to target with SMB signing off", mitre: "T1550.002" },
+      { phase: "Execution", technique: "Remote Shell", description: "Interactive SMB shell on SVC-SQL — no password cracking required", mitre: "T1059.001" },
+    ],
     evidence: [
       { label: "LLMNR Capture", content: "[SMB] NTLMv2 Client: 10.10.10.42 | User: CORP\\john.doe | Hash captured" },
       { label: "Relay Success", content: "ntlmrelayx: Authenticating as CORP/john.doe against smb://10.10.10.50 SUCCEED\nStarted interactive SMB shell on SVC-SQL" },
     ],
     impact: "Lateral movement without password cracking on 67% of CORP hosts.",
     remediation: [
-      { step: 1, title: "Disable LLMNR via GPO", command: "Computer Configuration → Admin Templates → Network → DNS Client → Turn off multicast name resolution = Enabled", description: "Prevent LLMNR queries from being broadcast.", estimatedHours: 1, completed: true, completedBy: "Priya Sharma" },
-      { step: 2, title: "Disable NBT-NS", command: "Set-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\NetBT\\Parameters\\Interfaces\\Tcpip_*' -Name NetbiosOptions -Value 2", description: "Disable NetBIOS over TCP/IP on all interfaces.", estimatedHours: 1, completed: false },
+      { step: 1, title: "Disable LLMNR via GPO", command: "Computer Config → Admin Templates → Network → DNS Client → Turn off multicast name resolution = Enabled", description: "Prevent LLMNR queries from being broadcast.", estimatedHours: 1, completed: true, completedBy: "Priya Sharma" },
+      { step: 2, title: "Disable NBT-NS", command: "Set-ItemProperty -Path 'HKLM:\\SYSTEM\\...\\NetBT\\Parameters\\Interfaces\\Tcpip_*' -Name NetbiosOptions -Value 2", description: "Disable NetBIOS over TCP/IP on all interfaces.", estimatedHours: 1, completed: false },
       { step: 3, title: "Enforce SMB signing on all CORP hosts", command: "Set-SmbServerConfiguration -RequireSecuritySignature $true -Force", description: "Prevents relay attacks even if hash is captured.", estimatedHours: 2, completed: false },
     ],
     compliance: [
       { framework: "NIST SP 800-53 Rev 5", refs: ["SC-7 (Boundary Protection)", "SC-8 (Transmission Integrity)"] },
     ],
-    mitre: [{ id: "T1557.001", name: "LLMNR/NBT-NS Poisoning" }, { id: "T1550.002", name: "Pass the Hash" }],
+    mitre: [{ id: "T1557.001", name: "LLMNR/NBT-NS Poisoning and Relay" }, { id: "T1550.002", name: "Pass the Hash" }],
   },
   {
     id: "VAPT-HIGH-002",
@@ -168,23 +299,47 @@ const FINDINGS: Finding[] = [
     affectedHost: "WS-042, 10.10.10.0/24",
     discoveredAt: "2026-05-10T14:22:00Z",
     exploitability: "MODERATE",
-    riskScore: 75,
+    riskScore: 618,
+    riskBreakdown: { cvss: 188, epss: 80, kev: 0, exploit: 100, asset: 75, lateral: 50 },
+    epssScore: 0.4012,
+    epssPercentile: 0.9123,
+    kevListed: false,
+    exploitMaturity: "POC",
+    pocAvailable: true,
+    activelyExploited: false,
+    detectionCoverage: "BLIND",
+    detectionNote: "Process Creation auditing (Event 4688) disabled. WMI subscription persistence undetected.",
+    fpProbability: 0.08,
+    relatedFindings: ["VAPT-HIGH-001"],
+    tags: ["wmi", "lateral-movement", "evasion", "laps"],
+    assignee: "Marcus Lee",
+    aiTriage: {
+      priority: "P1",
+      reasoning: "Demonstrated lateral movement to 18/241 hosts using captured hashes from VAPT-HIGH-001. Blind detection coverage compounds the risk. Combined with VAPT-HIGH-001 this creates a full lateral movement chain.",
+      recommendation: "Enable Process Creation auditing (GPO, 1h) as immediate visibility win. Then deploy LAPS to break hash reuse across 18 hosts. Tie remediation to VAPT-HIGH-001 SMB signing fix — closing the relay chain removes the source credentials.",
+      confidence: 0.87,
+    },
     description: "WMI remote execution accessible across CORP VLAN without network restrictions. 18 of 241 hosts vulnerable using captured credentials.",
     technicalDetails: "No Process Creation auditing (Event ID 4688 disabled). CrowdStrike detection bypassed during engagement window.",
     attackPath: "WS-042 → wmic /node:TARGET process call create → Remote cmd.exe → Persistence via WMI subscription",
+    killChain: [
+      { phase: "Lateral Movement", technique: "WMI Execution", description: "wmic /node: process call create — remote execution via DCOM", mitre: "T1047" },
+      { phase: "Persistence", technique: "WMI Event Subscription", description: "Persistent foothold via __EventFilter + __CommandLineEventConsumer", mitre: "T1546.003" },
+      { phase: "Defense Evasion", technique: "Process ID Spoofing", description: "WMI-spawned processes appear as WmiPrvSE.exe parent — evades EDR", mitre: "T1036.005" },
+    ],
     evidence: [
       { label: "WMI Remote Exec", content: "Invoke-WmiMethod: ProcessId=4824, ReturnValue=0 ← SUCCESS on WS-128\n18/241 CORP hosts vulnerable" },
     ],
     impact: "Horizontal spread across CORP VLAN — 18+ footholds without triggering alerts.",
     remediation: [
-      { step: 1, title: "Block WMI remote access via Windows Firewall", command: "netsh advfirewall firewall add rule name='Block WMI Remote' protocol=TCP dir=in localport=135 action=block", description: "Restrict WMI DCOM port at host level.", estimatedHours: 2, completed: false },
-      { step: 2, title: "Deploy LAPS", description: "Local Administrator Password Solution — unique local admin password per host eliminates relay reuse.", estimatedHours: 8, completed: false },
-      { step: 3, title: "Enable Process Creation auditing", command: "GPO: Audit Process Creation = Success, Failure (Event ID 4688 with command line)", description: "Required for WMI execution visibility.", estimatedHours: 1, completed: false },
+      { step: 1, title: "Enable Process Creation auditing", command: "GPO: Audit Process Creation = Success, Failure (Event ID 4688 with command line)", description: "Required for WMI execution visibility.", estimatedHours: 1, completed: false },
+      { step: 2, title: "Block WMI remote access via Windows Firewall", command: "netsh advfirewall firewall add rule name='Block WMI Remote' protocol=TCP dir=in localport=135 action=block", description: "Restrict WMI DCOM port at host level.", estimatedHours: 2, completed: false },
+      { step: 3, title: "Deploy LAPS", description: "Local Administrator Password Solution — unique local admin password per host eliminates relay reuse.", estimatedHours: 8, completed: false },
     ],
     compliance: [
       { framework: "NIST SP 800-53 Rev 5", refs: ["AC-17 (Remote Access)", "AU-12 (Audit Record Generation)"] },
     ],
-    mitre: [{ id: "T1047", name: "Windows Management Instrumentation" }],
+    mitre: [{ id: "T1047", name: "Windows Management Instrumentation" }, { id: "T1546.003", name: "WMI Event Subscription" }],
   },
   {
     id: "VAPT-MED-001",
@@ -195,10 +350,34 @@ const FINDINGS: Finding[] = [
     affectedHost: "VLAN30 → VLAN10 inter-VLAN routing",
     discoveredAt: "2026-05-11T09:15:00Z",
     exploitability: "DIFFICULT",
-    riskScore: 55,
+    riskScore: 412,
+    riskBreakdown: { cvss: 160, epss: 22, kev: 0, exploit: 50, asset: 100, lateral: 25 },
+    epssScore: 0.1102,
+    epssPercentile: 0.7234,
+    kevListed: false,
+    exploitMaturity: "THEORETICAL",
+    pocAvailable: false,
+    activelyExploited: false,
+    detectionCoverage: "COVERED",
+    detectionNote: "Inter-VLAN anomalous traffic detected by IDS. ACL block confirmed at MGMT ingress.",
+    fpProbability: 0.15,
+    relatedFindings: [],
+    tags: ["segmentation", "vlan", "acl", "network"],
+    assignee: "Marcus Lee",
+    aiTriage: {
+      priority: "P2",
+      reasoning: "High asset criticality (MGMT zone) elevates score despite moderate CVSS and difficult exploitability. Remediation steps are already complete (ACL + SMB firewall rule). Detection coverage in place. Verify and close.",
+      recommendation: "Both remediation steps are marked complete. Verify ACL enforcement with a re-test from CORP subnet. If confirmed blocked, update status to CLOSED. Detection IDS rule should remain as a compensating control.",
+      confidence: 0.88,
+    },
     description: "CORP (VLAN30) can directly reach MGMT (VLAN10) on TCP/445. Jump host enforcement applied at application layer only.",
     technicalDetails: "Core switch ACL has broad PERMIT from CORP to MGMT. Windows Firewall on MGMT-SRV bypassable via SMB share.",
     attackPath: "WS-042 → Direct TCP/445 to 172.16.1.10 → SMB share access → Credential files on MGMT share",
+    killChain: [
+      { phase: "Discovery", technique: "Network Share Enumeration", description: "Discover MGMT share accessible from CORP VLAN", mitre: "T1135" },
+      { phase: "Lateral Movement", technique: "SMB/Windows Admin Shares", description: "Direct TCP/445 traversal across VLAN boundary", mitre: "T1021.002" },
+      { phase: "Collection", technique: "Data from Network Shared Drive", description: "Access credential files and configuration data on MGMT share", mitre: "T1039" },
+    ],
     evidence: [
       { label: "Connectivity Proof", content: "Test-NetConnection 172.16.1.10 -Port 445: TcpTestSucceeded = True ← CORP can reach MGMT on SMB" },
     ],
@@ -211,7 +390,7 @@ const FINDINGS: Finding[] = [
       { framework: "NIST SP 800-53 Rev 5", refs: ["SC-7 (Boundary Protection)"] },
       { framework: "PCI DSS v4.0", refs: ["Req 1.3.2 — Restrict inbound traffic"] },
     ],
-    mitre: [{ id: "T1599", name: "Network Boundary Bridging" }],
+    mitre: [{ id: "T1599", name: "Network Boundary Bridging" }, { id: "T1021.002", name: "SMB/Windows Admin Shares" }],
   },
 ];
 
@@ -236,19 +415,155 @@ function SevBadge({ s }: { s: Severity }) {
   );
 }
 
+/* ─── Risk Score Badge ─── */
+function RiskBadge({ score }: { score: number }) {
+  const c = riskScoreColor(score);
+  return (
+    <span style={{
+      fontFamily: "'JetBrains Mono', monospace", fontSize: 10, padding: "2px 8px", borderRadius: 4,
+      background: `${c}15`, color: c, border: `1px solid ${c}30`, fontWeight: 700,
+    }}>
+      RISK {score}
+    </span>
+  );
+}
+
+/* ─── KEV Badge ─── */
+function KevBadge() {
+  return (
+    <span style={{
+      fontFamily: "'JetBrains Mono', monospace", fontSize: 9, padding: "2px 6px", borderRadius: 4,
+      background: "rgba(255,23,68,0.15)", color: "#FF1744", border: "1px solid rgba(255,23,68,0.35)",
+      fontWeight: 700, letterSpacing: 0.5,
+    }}>
+      ⚠ KEV
+    </span>
+  );
+}
+
 /* ─── Status Badge ─── */
 function StatusBadge({ s, onClick }: { s: FindingStatus; onClick?: () => void }) {
   return (
-    <span
-      onClick={onClick}
-      style={{
-        fontFamily: "'JetBrains Mono', monospace", fontSize: 10, padding: "2px 8px", borderRadius: 4,
-        background: `${STATUS_COLOR[s]}12`, color: STATUS_COLOR[s], border: `1px solid ${STATUS_COLOR[s]}30`,
-        cursor: onClick ? "pointer" : "default",
-      }}
-    >
+    <span onClick={onClick} style={{
+      fontFamily: "'JetBrains Mono', monospace", fontSize: 10, padding: "2px 8px", borderRadius: 4,
+      background: `${STATUS_COLOR[s]}12`, color: STATUS_COLOR[s], border: `1px solid ${STATUS_COLOR[s]}30`,
+      cursor: onClick ? "pointer" : "default",
+    }}>
       {STATUS_LABEL[s]}
     </span>
+  );
+}
+
+/* ─── Detection Coverage Pill ─── */
+function DetectionPill({ cov }: { cov: DetectionCoverage }) {
+  const c = COVERAGE_COLOR[cov];
+  const icon = cov === "COVERED" ? "◉" : cov === "PARTIAL" ? "◑" : "○";
+  return (
+    <span style={{
+      fontFamily: "'JetBrains Mono', monospace", fontSize: 9, padding: "2px 6px", borderRadius: 4,
+      background: `${c}12`, color: c, border: `1px solid ${c}30`,
+    }}>
+      {icon} {cov}
+    </span>
+  );
+}
+
+/* ─── EPSS Bar ─── */
+function EpssBar({ score, percentile }: { score: number; percentile: number }) {
+  const pct = Math.round(score * 100);
+  const color = score > 0.7 ? "#FF1744" : score > 0.4 ? "#FF6D00" : score > 0.1 ? "#FFD600" : "#64748B";
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color }}>
+          EPSS {(score * 100).toFixed(1)}%
+        </span>
+        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)" }}>
+          {Math.round(percentile * 100)}th pct
+        </span>
+      </div>
+      <div style={{ height: 4, background: "rgba(100,116,139,0.2)", borderRadius: 2, overflow: "hidden" }}>
+        <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 2, transition: "width 0.4s ease" }} />
+      </div>
+    </div>
+  );
+}
+
+/* ─── Risk Score Breakdown ─── */
+function RiskBreakdownBar({ breakdown, total }: { breakdown: RiskBreakdown; total: number }) {
+  const segments = [
+    { key: "cvss",    label: "CVSS",    color: "#FF6D00", value: breakdown.cvss },
+    { key: "epss",    label: "EPSS",    color: "#2563EB", value: breakdown.epss },
+    { key: "kev",     label: "KEV",     color: "#FF1744", value: breakdown.kev },
+    { key: "exploit", label: "EXPLOIT", color: "#9C27B0", value: breakdown.exploit },
+    { key: "asset",   label: "ASSET",   color: "#FFD600", value: breakdown.asset },
+    { key: "lateral", label: "LATERAL", color: "#00E676", value: breakdown.lateral },
+  ];
+  return (
+    <div>
+      <div style={{ height: 8, display: "flex", borderRadius: 4, overflow: "hidden", marginBottom: 6 }}>
+        {segments.map((s) => (
+          <div key={s.key} style={{ width: `${(s.value / 1000) * 100}%`, background: s.color }} title={`${s.label}: ${s.value}`} />
+        ))}
+      </div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {segments.map((s) => (
+          <div key={s.key} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <div style={{ width: 6, height: 6, borderRadius: 1, background: s.color }} />
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)" }}>
+              {s.label} {s.value}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Kill Chain Visualization ─── */
+function KillChainViz({ steps }: { steps: KillChainStep[] }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+      {steps.map((step, i) => {
+        const color = KILL_CHAIN_PHASE_COLOR[step.phase] ?? "#64748B";
+        return (
+          <div key={i} style={{ display: "flex", gap: 0, alignItems: "stretch" }}>
+            {/* Timeline line */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 24, flexShrink: 0 }}>
+              <div style={{
+                width: 10, height: 10, borderRadius: "50%", background: color,
+                border: `2px solid ${color}40`, flexShrink: 0, marginTop: 4, zIndex: 1,
+                boxShadow: `0 0 6px ${color}60`,
+              }} />
+              {i < steps.length - 1 && (
+                <div style={{ width: 1, flex: 1, background: `${color}30`, minHeight: 16 }} />
+              )}
+            </div>
+            {/* Step content */}
+            <div style={{ flex: 1, paddingBottom: i < steps.length - 1 ? 10 : 0, paddingLeft: 8 }}>
+              <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 2 }}>
+                <span style={{
+                  fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color,
+                  background: `${color}12`, border: `1px solid ${color}25`,
+                  padding: "1px 5px", borderRadius: 3,
+                }}>{step.phase}</span>
+                {step.mitre && (
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-accent)" }}>
+                    {step.mitre}
+                  </span>
+                )}
+              </div>
+              <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 600, color: "var(--adv-text)", marginBottom: 1 }}>
+                {step.technique}
+              </div>
+              <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: "var(--adv-text-muted)", lineHeight: 1.4 }}>
+                {step.description}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -259,7 +574,6 @@ function RemediationChecklist({ steps, findingId }: { steps: (string | RemStep)[
     steps.forEach((s, i) => { if (typeof s !== "string") init[`${findingId}-${i}`] = s.completed; });
     return init;
   });
-
   const toggle = (key: string) => setChecks((p) => ({ ...p, [key]: !p[key] }));
 
   return (
@@ -269,42 +583,34 @@ function RemediationChecklist({ steps, findingId }: { steps: (string | RemStep)[
           const key = `${findingId}-${i}`;
           return (
             <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-              <div
-                onClick={() => toggle(key)}
-                style={{
-                  width: 16, height: 16, borderRadius: 4, flexShrink: 0, marginTop: 2, cursor: "pointer",
-                  background: checks[key] ? "rgba(5,150,105,0.2)" : "transparent",
-                  border: `1.5px solid ${checks[key] ? "#059669" : "#E2E8F0"}`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}
-              >
+              <div onClick={() => toggle(key)} style={{
+                width: 16, height: 16, borderRadius: 4, flexShrink: 0, marginTop: 2, cursor: "pointer",
+                background: checks[key] ? "rgba(5,150,105,0.2)" : "transparent",
+                border: `1.5px solid ${checks[key] ? "#059669" : "#E2E8F0"}`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
                 {checks[key] && <Check size={10} color="#059669" />}
               </div>
-              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: checks[key] ? "#64748B" : "#0F172A", textDecoration: checks[key] ? "line-through" : "none", lineHeight: 1.5 }}>{s}</span>
+              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: checks[key] ? "#64748B" : "var(--adv-text)", textDecoration: checks[key] ? "line-through" : "none", lineHeight: 1.5 }}>{s}</span>
             </div>
           );
         }
-
-        /* Enhanced step */
         const key = `${findingId}-${i}`;
         const done = checks[key] ?? s.completed;
         return (
-          <div key={i} style={{ background: "var(--adv-bg)", border: `1px solid ${done ? "rgba(5,150,105,0.2)" : "#E2E8F0"}`, borderRadius: 6, padding: "10px 12px" }}>
+          <div key={i} style={{ background: "var(--adv-bg)", border: `1px solid ${done ? "rgba(5,150,105,0.2)" : "var(--adv-border)"}`, borderRadius: 6, padding: "10px 12px" }}>
             <div style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: s.command ? 8 : 0 }}>
-              <div
-                onClick={() => toggle(key)}
-                style={{
-                  width: 16, height: 16, borderRadius: 4, flexShrink: 0, marginTop: 2, cursor: "pointer",
-                  background: done ? "rgba(5,150,105,0.2)" : "transparent",
-                  border: `1.5px solid ${done ? "#059669" : "#E2E8F0"}`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}
-              >
+              <div onClick={() => toggle(key)} style={{
+                width: 16, height: 16, borderRadius: 4, flexShrink: 0, marginTop: 2, cursor: "pointer",
+                background: done ? "rgba(5,150,105,0.2)" : "transparent",
+                border: `1.5px solid ${done ? "#059669" : "#E2E8F0"}`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
                 {done && <Check size={10} color="#059669" />}
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600, color: done ? "#64748B" : "#0F172A", textDecoration: done ? "line-through" : "none" }}>
+                  <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600, color: done ? "#64748B" : "var(--adv-text)", textDecoration: done ? "line-through" : "none" }}>
                     Step {s.step}: {s.title}
                   </span>
                   <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)" }}>~{s.estimatedHours}h</span>
@@ -321,8 +627,7 @@ function RemediationChecklist({ steps, findingId }: { steps: (string | RemStep)[
             {s.verification && (
               <div style={{ marginTop: 4, display: "flex", gap: 6, alignItems: "center" }}>
                 <CheckCircle size={10} color="#059669" />
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)" }}>Verify: </span>
-                <code style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "#059669" }}>{s.verification}</code>
+                <code style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "#059669" }}>Verify: {s.verification}</code>
               </div>
             )}
             {s.completedBy && (
@@ -338,126 +643,309 @@ function RemediationChecklist({ steps, findingId }: { steps: (string | RemStep)[
 }
 
 /* ─── Finding Detail ─── */
-function FindingDetail({ f, onStatusChange }: { f: Finding; onStatusChange: (id: string, s: FindingStatus) => void }) {
-  const [tab, setTab] = useState<"overview" | "evidence" | "remediation" | "compliance">("overview");
+function FindingDetail({ f, allFindings, onStatusChange }: {
+  f: Finding; allFindings: Finding[]; onStatusChange: (id: string, s: FindingStatus) => void;
+}) {
+  const [tab, setTab] = useState<"overview" | "intel" | "evidence" | "remediation" | "compliance">("overview");
   const sla = getSlaColor(f.discoveredAt, f.severity);
 
-  const WORKFLOW: { status: FindingStatus; label: string; color: string; desc: string }[] = [
-    { status: "IN_REVIEW",      label: "Mark In Review",    color: "#FF9900", desc: "Begin active analysis" },
-    { status: "IN_REMEDIATION", label: "Start Remediation", color: "var(--adv-accent)", desc: "Remediation in progress" },
-    { status: "VERIFIED",       label: "Mark Verified",     color: "#059669", desc: "Fix confirmed working" },
-    { status: "ACCEPTED",       label: "Accept Risk",       color: "#9C27B0", desc: "Documented risk acceptance" },
-    { status: "FALSE_POSITIVE", label: "False Positive",    color: "var(--adv-text-muted)", desc: "Finding is invalid" },
+  const WORKFLOW: { status: FindingStatus; label: string; color: string }[] = [
+    { status: "IN_REVIEW",      label: "In Review",    color: "#FF9900" },
+    { status: "IN_REMEDIATION", label: "Remediation",  color: "var(--adv-accent)" },
+    { status: "VERIFIED",       label: "Verified",     color: "#059669" },
+    { status: "ACCEPTED",       label: "Accept Risk",  color: "#9C27B0" },
+    { status: "FALSE_POSITIVE", label: "False Pos.",   color: "var(--adv-text-muted)" },
   ];
 
+  const related = allFindings.filter((r) => r.id !== f.id && (f.relatedFindings ?? []).includes(r.id));
+  const pc = PRIORITY_COLOR[f.aiTriage.priority];
+
   return (
-    <div className="animate-scale-in" style={{ background: "linear-gradient(160deg, rgba(37,99,235,0.05) 0%, #FFFFFF 55%)", border: "1px solid var(--adv-border)", borderRadius: 8, overflow: "hidden" }}>
-      {/* Detail Header */}
-      <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--adv-border)", background: "var(--adv-bg)" }}>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+    <div className="animate-scale-in" style={{ background: "var(--adv-bg)", border: "1px solid var(--adv-border)", borderRadius: 8, overflow: "hidden" }}>
+
+      {/* ── Header ── */}
+      <div style={{ padding: "14px 18px", borderBottom: "1px solid var(--adv-border)", background: `linear-gradient(135deg, ${SEV_COLOR[f.severity]}08 0%, transparent 60%)` }}>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8, alignItems: "center" }}>
           <SevBadge s={f.severity} />
           <StatusBadge s={f.status} />
-          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", background: "rgba(100,116,139,0.1)", border: "1px solid var(--adv-border)", borderRadius: 4, padding: "2px 8px" }}>
-            CVSS {f.cvss}
-          </span>
+          <RiskBadge score={f.riskScore} />
+          {f.kevListed && <KevBadge />}
           <span style={{
-            fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: sla.color,
-            background: `${sla.color}10`, border: `1px solid ${sla.color}30`, borderRadius: 4, padding: "2px 8px",
+            fontFamily: "'JetBrains Mono', monospace", fontSize: 9,
+            color: pc, background: `${pc}15`, border: `1px solid ${pc}30`,
+            borderRadius: 4, padding: "2px 6px", fontWeight: 700,
           }}>
-            SLA: {sla.label}
+            {f.aiTriage.priority}
           </span>
-          {f.exploitability && (
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: f.exploitability === "EASY" ? "#FF1744" : f.exploitability === "MODERATE" ? "#FFD600" : "#00E676", background: "rgba(0,0,0,0.2)", border: "1px solid var(--adv-border)", borderRadius: 4, padding: "2px 8px" }}>
-              EXPLOIT: {f.exploitability}
-            </span>
-          )}
+          <DetectionPill cov={f.detectionCoverage} />
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: MATURITY_COLOR[f.exploitMaturity], background: `${MATURITY_COLOR[f.exploitMaturity]}12`, border: `1px solid ${MATURITY_COLOR[f.exploitMaturity]}25`, borderRadius: 4, padding: "2px 6px" }}>
+            {f.exploitMaturity}
+          </span>
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: sla.color, background: `${sla.color}10`, border: `1px solid ${sla.color}25`, borderRadius: 4, padding: "2px 6px" }}>
+            SLA {sla.label}
+          </span>
         </div>
-        <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 18, fontWeight: 700, color: "var(--adv-text)", margin: 0, lineHeight: 1.3 }}>{f.title}</h2>
-        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", marginTop: 6 }}>
+        <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 17, fontWeight: 700, color: "var(--adv-text)", margin: 0, lineHeight: 1.3 }}>{f.title}</h2>
+        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", marginTop: 5 }}>
           {f.id} · {f.category} · {f.affectedHost}
+          {f.assignee && <span style={{ color: "var(--adv-accent)", marginLeft: 8 }}>@{f.assignee}</span>}
         </div>
+
+        {/* Risk breakdown bar */}
+        <div style={{ marginTop: 10 }}>
+          <RiskBreakdownBar breakdown={f.riskBreakdown} total={f.riskScore} />
+        </div>
+
+        {/* Business impact */}
         {f.businessImpact && (
-          <div style={{ marginTop: 10, padding: "8px 12px", background: `${SEV_COLOR[f.severity]}08`, border: `1px solid ${SEV_COLOR[f.severity]}20`, borderRadius: 5 }}>
+          <div style={{ marginTop: 10, padding: "7px 10px", background: `${SEV_COLOR[f.severity]}08`, border: `1px solid ${SEV_COLOR[f.severity]}18`, borderRadius: 5 }}>
             <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: SEV_COLOR[f.severity] }}>BUSINESS IMPACT</span>
-            <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: "var(--adv-text)", marginTop: 4 }}>{f.businessImpact}</div>
+            <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: "var(--adv-text)", marginTop: 3 }}>{f.businessImpact}</div>
           </div>
         )}
       </div>
 
-      {/* Workflow buttons */}
-      <div style={{ padding: "10px 20px", borderBottom: "1px solid var(--adv-border)", display: "flex", gap: 6, flexWrap: "wrap" }}>
-        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", alignSelf: "center" }}>ADVANCE:</span>
+      {/* ── AI Triage Panel ── */}
+      <div style={{ padding: "10px 18px", borderBottom: "1px solid var(--adv-border)", background: "rgba(37,99,235,0.03)" }}>
+        <div style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>
+          <Brain size={13} color="var(--adv-accent)" style={{ flexShrink: 0, marginTop: 1 }} />
+          <div style={{ flex: 1 }}>
+            <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 4 }}>
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-accent)" }}>AI TRIAGE</span>
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)" }}>
+                {Math.round(f.aiTriage.confidence * 100)}% confidence
+              </span>
+            </div>
+            <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: "var(--adv-text)", lineHeight: 1.5, marginBottom: 5 }}>{f.aiTriage.reasoning}</div>
+            <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: "#059669", lineHeight: 1.5 }}>
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "#059669" }}>RECOMMEND: </span>
+              {f.aiTriage.recommendation}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Workflow ── */}
+      <div style={{ padding: "8px 18px", borderBottom: "1px solid var(--adv-border)", display: "flex", gap: 5, flexWrap: "wrap", alignItems: "center" }}>
+        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)" }}>ADVANCE:</span>
         {WORKFLOW.map((w) => (
-          <button
-            key={w.status}
-            onClick={() => onStatusChange(f.id, w.status)}
-            disabled={f.status === w.status}
-            style={{
-              padding: "4px 10px", borderRadius: 4, cursor: f.status === w.status ? "default" : "pointer",
-              border: `1px solid ${f.status === w.status ? "#E2E8F0" : `${w.color}50`}`,
-              background: f.status === w.status ? "transparent" : `${w.color}10`,
-              color: f.status === w.status ? "#64748B" : w.color,
-              fontFamily: "'JetBrains Mono', monospace", fontSize: 10,
-              opacity: f.status === w.status ? 0.5 : 1,
-            }}
-          >
-            {w.label}
-          </button>
+          <button key={w.status} onClick={() => onStatusChange(f.id, w.status)} disabled={f.status === w.status} style={{
+            padding: "3px 9px", borderRadius: 4, cursor: f.status === w.status ? "default" : "pointer",
+            border: `1px solid ${f.status === w.status ? "var(--adv-border)" : `${w.color}45`}`,
+            background: f.status === w.status ? "transparent" : `${w.color}10`,
+            color: f.status === w.status ? "var(--adv-text-muted)" : w.color,
+            fontFamily: "'JetBrains Mono', monospace", fontSize: 9, opacity: f.status === w.status ? 0.5 : 1,
+          }}>{w.label}</button>
         ))}
       </div>
 
-      {/* Tabs */}
-      <div style={{ display: "flex", borderBottom: "1px solid var(--adv-border)" }}>
-        {(["overview", "evidence", "remediation", "compliance"] as const).map((t) => (
+      {/* ── Tabs ── */}
+      <div style={{ display: "flex", borderBottom: "1px solid var(--adv-border)", overflowX: "auto" }}>
+        {(["overview", "intel", "evidence", "remediation", "compliance"] as const).map((t) => (
           <button key={t} onClick={() => setTab(t)} style={{
-            padding: "9px 16px", background: tab === t ? "rgba(37,99,235,0.04)" : "transparent",
+            padding: "8px 14px", background: tab === t ? "rgba(37,99,235,0.04)" : "transparent",
             border: "none", borderBottom: tab === t ? "2px solid #2563EB" : "2px solid transparent",
-            color: tab === t ? "#0F172A" : "#64748B", fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 10, letterSpacing: 1, cursor: "pointer", textTransform: "uppercase",
+            color: tab === t ? "var(--adv-text)" : "var(--adv-text-muted)",
+            fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: 0.8,
+            cursor: "pointer", textTransform: "uppercase", whiteSpace: "nowrap",
           }}>
-            {t === "remediation" ? `Remediation (${Array.isArray(f.remediation) ? f.remediation.length : 0})` : t}
+            {t === "remediation" ? `Remediaton (${f.remediation.length})` : t === "intel" ? "Threat Intel" : t}
           </button>
         ))}
       </div>
 
-      <div style={{ padding: "16px 20px" }}>
+      <div style={{ padding: "16px 18px" }}>
+
+        {/* Overview tab */}
         {tab === "overview" && (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
             <div>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", marginBottom: 6 }}>DESCRIPTION</div>
-              <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, color: "var(--adv-text)", lineHeight: 1.6 }}>{f.description}</div>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", marginTop: 12, marginBottom: 6 }}>ATTACK PATH</div>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#FF9900", lineHeight: 1.8 }}>{f.attackPath}</div>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", marginTop: 12, marginBottom: 6 }}>IMPACT</div>
-              <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: "var(--adv-text)", lineHeight: 1.5 }}>{f.impact}</div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", marginBottom: 5 }}>DESCRIPTION</div>
+              <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: "var(--adv-text)", lineHeight: 1.6, marginBottom: 14 }}>{f.description}</div>
+
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", marginBottom: 8 }}>KILL CHAIN</div>
+              <KillChainViz steps={f.killChain} />
+
+              {related.length > 0 && (
+                <div style={{ marginTop: 14 }}>
+                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", marginBottom: 6 }}>
+                    <Link2 size={10} style={{ display: "inline", marginRight: 4 }} />CORRELATED FINDINGS
+                  </div>
+                  {related.map((r) => (
+                    <div key={r.id} style={{ display: "flex", gap: 6, alignItems: "center", padding: "5px 8px", background: "var(--adv-panel)", borderRadius: 4, marginBottom: 4 }}>
+                      <div style={{ width: 6, height: 6, borderRadius: "50%", background: SEV_COLOR[r.severity], flexShrink: 0 }} />
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-accent)" }}>{r.id}</span>
+                      <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: "var(--adv-text)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.title}</span>
+                      <RiskBadge score={r.riskScore} />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             <div>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", marginBottom: 6 }}>TECHNICAL DETAILS</div>
-              <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: "var(--adv-text)", lineHeight: 1.6 }}>{f.technicalDetails}</div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", marginBottom: 5 }}>TECHNICAL DETAILS</div>
+              <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: "var(--adv-text)", lineHeight: 1.6, marginBottom: 12 }}>{f.technicalDetails}</div>
+
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", marginBottom: 6 }}>MITRE ATT&CK</div>
+              {f.mitre.map((m) => (
+                <div key={m.id} style={{ display: "flex", gap: 8, marginBottom: 4, alignItems: "center" }}>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-accent)", flexShrink: 0 }}>{m.id}</span>
+                  <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: "var(--adv-text-muted)" }}>{m.name}</span>
+                </div>
+              ))}
+
               <div style={{ marginTop: 12 }}>
-                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", marginBottom: 6 }}>MITRE ATT&CK</div>
-                {f.mitre.map((m) => (
-                  <div key={m.id} style={{ display: "flex", gap: 8, marginBottom: 4 }}>
-                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-accent)" }}>{m.id}</span>
-                    <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: "var(--adv-text-muted)" }}>{m.name}</span>
-                  </div>
-                ))}
-              </div>
-              <div style={{ marginTop: 12 }}>
-                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)", marginBottom: 6 }}>CVSS VECTOR</div>
-                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text)", background: "var(--adv-bg)", padding: "6px 10px", borderRadius: 4, wordBreak: "break-all" }}>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", marginBottom: 5 }}>CVSS VECTOR</div>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text)", background: "var(--adv-panel)", padding: "6px 10px", borderRadius: 4, wordBreak: "break-all", lineHeight: 1.5 }}>
                   {f.cvssVector}
+                </div>
+              </div>
+
+              {f.tags && f.tags.length > 0 && (
+                <div style={{ marginTop: 12 }}>
+                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", marginBottom: 5 }}>
+                    <Tag size={9} style={{ display: "inline", marginRight: 4 }} />TAGS
+                  </div>
+                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                    {f.tags.map((t) => (
+                      <span key={t} style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", background: "var(--adv-panel)", border: "1px solid var(--adv-border)", borderRadius: 3, padding: "1px 5px" }}>{t}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Threat Intel tab */}
+        {tab === "intel" && (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            {/* Left: scores */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {/* EPSS */}
+              <div style={{ background: "var(--adv-panel)", border: "1px solid var(--adv-border)", borderRadius: 6, padding: "12px 14px" }}>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", marginBottom: 8 }}>
+                  EPSS · EXPLOIT PREDICTION SCORING
+                </div>
+                <EpssBar score={f.epssScore} percentile={f.epssPercentile} />
+                <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: "var(--adv-text-muted)", marginTop: 8, lineHeight: 1.4 }}>
+                  {f.epssScore > 0.5
+                    ? `Top ${(100 - f.epssPercentile * 100).toFixed(1)}% most likely to be exploited in the next 30 days (FIRST.org model).`
+                    : `Moderate exploitation probability. Monitor EPSS trend weekly.`}
+                </div>
+              </div>
+
+              {/* CISA KEV */}
+              <div style={{ background: "var(--adv-panel)", border: `1px solid ${f.kevListed ? "rgba(255,23,68,0.2)" : "var(--adv-border)"}`, borderRadius: 6, padding: "12px 14px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)" }}>CISA KEV STATUS</div>
+                  {f.kevListed ? <KevBadge /> : (
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "#64748B", background: "rgba(100,116,139,0.1)", border: "1px solid rgba(100,116,139,0.2)", borderRadius: 3, padding: "1px 5px" }}>NOT LISTED</span>
+                  )}
+                </div>
+                {f.kevListed && f.kevDateAdded && (
+                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#FF1744" }}>Added {f.kevDateAdded}</div>
+                )}
+                <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: "var(--adv-text-muted)", marginTop: 6, lineHeight: 1.4 }}>
+                  {f.kevListed
+                    ? "Actively exploited in the wild per CISA. Mandatory patching deadline applies to federal agencies. Treat as highest priority."
+                    : "Not in CISA KEV catalog. Monitor for future addition if CVSS ≥ 7.0 and exploitation observed."}
+                </div>
+              </div>
+
+              {/* FP probability */}
+              <div style={{ background: "var(--adv-panel)", border: "1px solid var(--adv-border)", borderRadius: 6, padding: "12px 14px" }}>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", marginBottom: 6 }}>FALSE POSITIVE PROBABILITY</div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ height: 4, flex: 1, background: "rgba(100,116,139,0.2)", borderRadius: 2, overflow: "hidden", marginRight: 10 }}>
+                    <div style={{ height: "100%", width: `${f.fpProbability * 100}%`, background: f.fpProbability < 0.1 ? "#059669" : f.fpProbability < 0.3 ? "#FFD600" : "#FF1744", borderRadius: 2 }} />
+                  </div>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: f.fpProbability < 0.1 ? "#059669" : "#FFD600", fontWeight: 700, flexShrink: 0 }}>
+                    {Math.round(f.fpProbability * 100)}%
+                  </span>
+                </div>
+                <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: "var(--adv-text-muted)", marginTop: 5 }}>
+                  {f.fpProbability < 0.1 ? "Very low FP probability — finding confirmed via exploitation evidence." : f.fpProbability < 0.3 ? "Moderate — correlate with additional evidence before closing." : "Elevated — validate before remediation investment."}
+                </div>
+              </div>
+            </div>
+
+            {/* Right: exploit intel + detection */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {/* Exploit maturity */}
+              <div style={{ background: "var(--adv-panel)", border: `1px solid ${MATURITY_COLOR[f.exploitMaturity]}22`, borderRadius: 6, padding: "12px 14px" }}>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", marginBottom: 8 }}>EXPLOIT INTELLIGENCE</div>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
+                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: MATURITY_COLOR[f.exploitMaturity], boxShadow: `0 0 6px ${MATURITY_COLOR[f.exploitMaturity]}` }} />
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: MATURITY_COLOR[f.exploitMaturity] }}>{f.exploitMaturity}</span>
+                  </div>
+                  {f.pocAvailable && (
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "#FF6D00", background: "rgba(255,109,0,0.1)", border: "1px solid rgba(255,109,0,0.2)", borderRadius: 3, padding: "1px 5px" }}>
+                      PoC PUBLIC
+                    </span>
+                  )}
+                  {f.activelyExploited && (
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "#FF1744", background: "rgba(255,23,68,0.12)", border: "1px solid rgba(255,23,68,0.25)", borderRadius: 3, padding: "1px 5px" }}>
+                      ACTIVE EXPLOITATION
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: "var(--adv-text-muted)", lineHeight: 1.4 }}>
+                  {f.exploitMaturity === "WEAPONIZED"
+                    ? "Weaponized exploit available in public toolchains (Metasploit/Sliver/Cobalt Strike). Exploitation is trivial for any attacker."
+                    : f.exploitMaturity === "POC"
+                    ? "Proof-of-concept code publicly available. Requires adaptation for production exploit but significantly lowers attacker barrier."
+                    : "No public exploit code. Theoretical attack path — requires custom exploit development."}
+                </div>
+              </div>
+
+              {/* Detection coverage */}
+              <div style={{ background: "var(--adv-panel)", border: `1px solid ${COVERAGE_COLOR[f.detectionCoverage]}22`, borderRadius: 6, padding: "12px 14px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)" }}>DETECTION COVERAGE</div>
+                  <DetectionPill cov={f.detectionCoverage} />
+                </div>
+                {f.detectionNote && (
+                  <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: "var(--adv-text-muted)", lineHeight: 1.4, marginBottom: 8 }}>{f.detectionNote}</div>
+                )}
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  {f.mitre.map((m) => (
+                    <div key={m.id} style={{ display: "flex", gap: 6, alignItems: "center", padding: "3px 6px", background: "var(--adv-bg)", borderRadius: 3 }}>
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-accent)", flexShrink: 0 }}>{m.id}</span>
+                      <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 10, color: "var(--adv-text-muted)", flex: 1 }}>{m.name}</span>
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 8, color: COVERAGE_COLOR[f.detectionCoverage] }}>
+                        {f.detectionCoverage}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Risk score context */}
+              <div style={{ background: "var(--adv-panel)", border: "1px solid var(--adv-border)", borderRadius: 6, padding: "12px 14px" }}>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", marginBottom: 6 }}>COMPOSITE RISK SCORE</div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 8 }}>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 28, fontWeight: 800, color: riskScoreColor(f.riskScore) }}>{f.riskScore}</span>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--adv-text-muted)" }}>/ 1000</span>
+                </div>
+                <div style={{ height: 6, background: "rgba(100,116,139,0.2)", borderRadius: 3, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${f.riskScore / 10}%`, background: riskScoreColor(f.riskScore), borderRadius: 3 }} />
+                </div>
+                <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: "var(--adv-text-muted)", marginTop: 6 }}>
+                  Composite: CVSS × 0.25 + EPSS × 0.20 + KEV × 0.20 + Exploit × 0.15 + Asset Criticality × 0.10 + Lateral Impact × 0.05
                 </div>
               </div>
             </div>
           </div>
         )}
 
+        {/* Evidence tab */}
         {tab === "evidence" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {f.evidence.map((e, i) => (
               <div key={i} style={{ background: "var(--adv-bg)", border: "1px solid var(--adv-border)", borderRadius: 6, overflow: "hidden" }}>
-                <div style={{ padding: "8px 12px", borderBottom: "1px solid var(--adv-border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ padding: "7px 12px", borderBottom: "1px solid var(--adv-border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)" }}>{e.label}</span>
                   <CopyBtn text={e.content} />
                 </div>
@@ -469,25 +957,27 @@ function FindingDetail({ f, onStatusChange }: { f: Finding; onStatusChange: (id:
           </div>
         )}
 
+        {/* Remediation tab */}
         {tab === "remediation" && (
           <div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
               <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--adv-text-muted)" }}>
-                {Array.isArray(f.remediation) ? f.remediation.filter((s) => typeof s !== "string" && s.completed).length : 0} / {f.remediation.length} steps completed
+                {f.remediation.filter((s) => typeof s !== "string" && s.completed).length} / {f.remediation.length} steps completed
               </span>
               <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#FFD600" }}>
-                ~{Array.isArray(f.remediation) ? f.remediation.reduce((a, s) => a + (typeof s !== "string" ? s.estimatedHours : 1), 0) : 0}h estimated
+                ~{f.remediation.reduce((a, s) => a + (typeof s !== "string" ? s.estimatedHours : 1), 0)}h estimated
               </span>
             </div>
             <RemediationChecklist steps={f.remediation} findingId={f.id} />
           </div>
         )}
 
+        {/* Compliance tab */}
         {tab === "compliance" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {f.compliance.map((c, i) => (
               <div key={i} style={{ background: "var(--adv-bg)", border: "1px solid var(--adv-border)", borderRadius: 6, padding: "10px 14px" }}>
-                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--adv-accent)", marginBottom: 8 }}>{c.framework}</div>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--adv-accent)", marginBottom: 7 }}>{c.framework}</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
                   {c.refs.map((r, j) => (
                     <div key={j} style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: "var(--adv-text)", lineHeight: 1.4 }}>· {r}</div>
@@ -504,14 +994,16 @@ function FindingDetail({ f, onStatusChange }: { f: Finding; onStatusChange: (id:
 
 /* ─── Main Page ─── */
 export default function FindingsPage() {
-  const { success, info } = useToast();
+  const { success } = useToast();
   const [findings, setFindings] = useState<Finding[]>(FINDINGS);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [filterSev, setFilterSev] = useState<Severity | "ALL">("ALL");
   const [filterStatus, setFilterStatus] = useState<FindingStatus | "ALL">("ALL");
   const [filterCat, setFilterCat] = useState<string>("ALL");
-  const [sortBy, setSortBy] = useState<"cvss" | "date" | "status">("cvss");
+  const [sortBy, setSortBy] = useState<"risk" | "cvss" | "epss" | "date">("risk");
+  const [filterKev, setFilterKev] = useState(false);
+  const [filterBlind, setFilterBlind] = useState(false);
 
   const categories = useMemo(() => ["ALL", ...Array.from(new Set(findings.map((f) => f.category)))], [findings]);
 
@@ -520,20 +1012,32 @@ export default function FindingsPage() {
     if (filterSev !== "ALL") list = list.filter((f) => f.severity === filterSev);
     if (filterStatus !== "ALL") list = list.filter((f) => f.status === filterStatus);
     if (filterCat !== "ALL") list = list.filter((f) => f.category === filterCat);
-    if (search) list = list.filter((f) => f.title.toLowerCase().includes(search.toLowerCase()) || f.id.includes(search) || f.affectedHost.toLowerCase().includes(search.toLowerCase()));
+    if (filterKev) list = list.filter((f) => f.kevListed);
+    if (filterBlind) list = list.filter((f) => f.detectionCoverage === "BLIND");
+    if (search) list = list.filter((f) =>
+      f.title.toLowerCase().includes(search.toLowerCase()) ||
+      f.id.includes(search) ||
+      f.affectedHost.toLowerCase().includes(search.toLowerCase()) ||
+      (f.tags ?? []).some((t) => t.toLowerCase().includes(search.toLowerCase()))
+    );
     list.sort((a, b) => {
-      if (sortBy === "cvss") return Number(b.cvss) - Number(a.cvss);
-      if (sortBy === "date") return new Date(b.discoveredAt).getTime() - new Date(a.discoveredAt).getTime();
-      return a.status.localeCompare(b.status);
+      if (sortBy === "risk")  return b.riskScore - a.riskScore;
+      if (sortBy === "cvss")  return Number(b.cvss) - Number(a.cvss);
+      if (sortBy === "epss")  return b.epssScore - a.epssScore;
+      if (sortBy === "date")  return new Date(b.discoveredAt).getTime() - new Date(a.discoveredAt).getTime();
+      return 0;
     });
     return list;
-  }, [findings, filterSev, filterStatus, filterCat, search, sortBy]);
+  }, [findings, filterSev, filterStatus, filterCat, filterKev, filterBlind, search, sortBy]);
 
   const stats = useMemo(() => ({
-    critical: findings.filter((f) => f.severity === "CRITICAL" && f.status === "OPEN").length,
-    high:     findings.filter((f) => f.severity === "HIGH" && f.status === "OPEN").length,
-    open:     findings.filter((f) => f.status === "OPEN" || f.status === "IN_REVIEW").length,
-    verified: findings.filter((f) => f.status === "VERIFIED" || f.status === "CLOSED").length,
+    critical:   findings.filter((f) => f.severity === "CRITICAL" && f.status === "OPEN").length,
+    high:       findings.filter((f) => f.severity === "HIGH" && f.status === "OPEN").length,
+    kev:        findings.filter((f) => f.kevListed).length,
+    blind:      findings.filter((f) => f.detectionCoverage === "BLIND").length,
+    weaponized: findings.filter((f) => f.exploitMaturity === "WEAPONIZED").length,
+    open:       findings.filter((f) => f.status === "OPEN" || f.status === "IN_REVIEW").length,
+    avgRisk:    Math.round(findings.reduce((s, f) => s + f.riskScore, 0) / findings.length),
   }), [findings]);
 
   const handleStatusChange = useCallback((id: string, newStatus: FindingStatus) => {
@@ -546,27 +1050,28 @@ export default function FindingsPage() {
   return (
     <PageShell
       title="FINDINGS"
-      subtitle="VAPT · TRIAGE · VALIDATION · REMEDIATION"
+      subtitle="VAPT · THREAT INTEL · TRIAGE · REMEDIATION"
       statusItems={[
-        { label: "CRITICAL OPEN", value: String(stats.critical), color: "#FF1744" },
-        { label: "HIGH OPEN",     value: String(stats.high),     color: "#FF6D00" },
-        { label: "REMEDIATED",    value: String(stats.verified),  color: "#059669" },
+        { label: "CRITICAL OPEN", value: String(stats.critical),   color: "#FF1744" },
+        { label: "KEV LISTED",    value: String(stats.kev),        color: "#FF6D00" },
+        { label: "BLIND DETECT",  value: String(stats.blind),      color: "#FFD600" },
+        { label: "AVG RISK",      value: String(stats.avgRisk),    color: riskScoreColor(stats.avgRisk) },
       ]}
     >
-      <div style={{ display: "grid", gridTemplateColumns: selectedId ? "360px 1fr" : "1fr", gap: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: selectedId ? "380px 1fr" : "1fr", gap: 16 }}>
 
         {/* ── Left: List ── */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
 
-          {/* Stats row */}
+          {/* KPI stats */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
             {[
-              { label: "CRITICAL",   value: findings.filter((f) => f.severity === "CRITICAL").length, color: "#FF1744" },
-              { label: "HIGH",       value: findings.filter((f) => f.severity === "HIGH").length,     color: "#FF6D00" },
-              { label: "OPEN",       value: stats.open,     color: "#FF9900" },
-              { label: "VERIFIED",   value: stats.verified, color: "#059669" },
+              { label: "CRITICAL",   value: findings.filter((f) => f.severity === "CRITICAL").length,  color: "#FF1744" },
+              { label: "WEAPONIZED", value: stats.weaponized,  color: "#9C27B0" },
+              { label: "KEV",        value: stats.kev,         color: "#FF6D00" },
+              { label: "BLIND",      value: stats.blind,       color: "#FFD600" },
             ].map((m) => (
-              <div key={m.label} className="animate-fade-up" style={{ background: "linear-gradient(160deg, rgba(37,99,235,0.05) 0%, #FFFFFF 55%)", border: "1px solid var(--adv-border)", borderRadius: 6, padding: "10px 12px", textAlign: "center" }}>
+              <div key={m.label} className="animate-fade-up" style={{ background: "var(--adv-bg)", border: "1px solid var(--adv-border)", borderRadius: 6, padding: "10px 12px", textAlign: "center" }}>
                 <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 22, fontWeight: 700, color: m.color }}>{m.value}</div>
                 <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)", marginTop: 2 }}>{m.label}</div>
               </div>
@@ -574,35 +1079,51 @@ export default function FindingsPage() {
           </div>
 
           {/* Filters */}
-          <div style={{ background: "linear-gradient(160deg, rgba(37,99,235,0.05) 0%, #FFFFFF 55%)", border: "1px solid var(--adv-border)", borderRadius: 6, padding: "10px 12px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, background: "var(--adv-bg)", border: "1px solid var(--adv-border)", borderRadius: 4, padding: "5px 10px" }}>
+          <div style={{ background: "var(--adv-bg)", border: "1px solid var(--adv-border)", borderRadius: 6, padding: "10px 12px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, background: "var(--adv-panel)", border: "1px solid var(--adv-border)", borderRadius: 4, padding: "5px 10px" }}>
               <Search size={11} color="#64748B" />
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search findings..."
+              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search findings, tags..."
                 style={{ background: "none", border: "none", outline: "none", color: "var(--adv-text)", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, width: "100%" }}
               />
             </div>
-            <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+
+            {/* Severity filter */}
+            <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 6 }}>
               {(["ALL", "CRITICAL", "HIGH", "MEDIUM", "LOW"] as const).map((s) => (
                 <button key={s} onClick={() => setFilterSev(s)} style={{
                   padding: "3px 8px", borderRadius: 3, cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 9,
-                  border: `1px solid ${filterSev === s ? (s === "ALL" ? "#2563EB" : SEV_COLOR[s as Severity]) : "#E2E8F0"}`,
+                  border: `1px solid ${filterSev === s ? (s === "ALL" ? "#2563EB" : SEV_COLOR[s as Severity]) : "var(--adv-border)"}`,
                   background: filterSev === s ? (s === "ALL" ? "rgba(37,99,235,0.1)" : `${SEV_COLOR[s as Severity]}15`) : "transparent",
-                  color: filterSev === s ? (s === "ALL" ? "#2563EB" : SEV_COLOR[s as Severity]) : "#64748B",
+                  color: filterSev === s ? (s === "ALL" ? "#2563EB" : SEV_COLOR[s as Severity]) : "var(--adv-text-muted)",
                 }}>{s}</button>
               ))}
             </div>
-            <div style={{ display: "flex", gap: 6, marginTop: 6, alignItems: "center" }}>
+
+            {/* Quick filters row */}
+            <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
               <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as FindingStatus | "ALL")}
-                style={{ background: "var(--adv-bg)", border: "1px solid var(--adv-border)", borderRadius: 4, color: "var(--adv-text-muted)", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, padding: "3px 6px", outline: "none" }}>
+                style={{ background: "var(--adv-panel)", border: "1px solid var(--adv-border)", borderRadius: 4, color: "var(--adv-text-muted)", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, padding: "3px 6px", outline: "none" }}>
                 {["ALL", "OPEN", "IN_REVIEW", "IN_REMEDIATION", "VERIFIED", "CLOSED", "ACCEPTED", "FALSE_POSITIVE"].map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
               <select value={filterCat} onChange={(e) => setFilterCat(e.target.value)}
-                style={{ background: "var(--adv-bg)", border: "1px solid var(--adv-border)", borderRadius: 4, color: "var(--adv-text-muted)", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, padding: "3px 6px", outline: "none" }}>
+                style={{ background: "var(--adv-panel)", border: "1px solid var(--adv-border)", borderRadius: 4, color: "var(--adv-text-muted)", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, padding: "3px 6px", outline: "none" }}>
                 {categories.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
-              <button onClick={() => setSortBy(sortBy === "cvss" ? "date" : sortBy === "date" ? "status" : "cvss")}
+              <button onClick={() => setFilterKev((p) => !p)} style={{
+                padding: "3px 8px", borderRadius: 3, cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 9,
+                border: `1px solid ${filterKev ? "rgba(255,23,68,0.4)" : "var(--adv-border)"}`,
+                background: filterKev ? "rgba(255,23,68,0.1)" : "transparent",
+                color: filterKev ? "#FF1744" : "var(--adv-text-muted)",
+              }}>⚠ KEV</button>
+              <button onClick={() => setFilterBlind((p) => !p)} style={{
+                padding: "3px 8px", borderRadius: 3, cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 9,
+                border: `1px solid ${filterBlind ? "rgba(255,23,68,0.4)" : "var(--adv-border)"}`,
+                background: filterBlind ? "rgba(255,23,68,0.1)" : "transparent",
+                color: filterBlind ? "#FF1744" : "var(--adv-text-muted)",
+              }}>○ BLIND</button>
+              <button onClick={() => setSortBy(sortBy === "risk" ? "cvss" : sortBy === "cvss" ? "epss" : sortBy === "epss" ? "date" : "risk")}
                 style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 8px", background: "transparent", border: "1px solid var(--adv-border)", borderRadius: 4, color: "var(--adv-text-muted)", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 9 }}>
-                <ArrowUpDown size={10} /> {sortBy.toUpperCase()}
+                <ArrowUpDown size={9} /> {sortBy.toUpperCase()}
               </button>
             </div>
           </div>
@@ -612,36 +1133,58 @@ export default function FindingsPage() {
             {filtered.map((f) => {
               const sla = getSlaColor(f.discoveredAt, f.severity);
               const isSelected = selectedId === f.id;
+              const pc = PRIORITY_COLOR[f.aiTriage.priority];
               return (
                 <div
                   key={f.id}
                   className="card-hover stagger-item"
                   onClick={() => setSelectedId(isSelected ? null : f.id)}
                   style={{
-                    background: isSelected ? "rgba(37,99,235,0.04)" : "#FFFFFF",
-                    border: `1px solid ${isSelected ? "#2563EB" : "#E2E8F0"}`,
+                    background: isSelected ? "rgba(37,99,235,0.03)" : "var(--adv-bg)",
+                    border: `1px solid ${isSelected ? "#2563EB" : "var(--adv-border)"}`,
                     borderLeft: `3px solid ${SEV_COLOR[f.severity]}`,
                     borderRadius: 6, padding: "10px 12px", cursor: "pointer",
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
-                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", flex: 1 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 5 }}>
+                    <div style={{ display: "flex", gap: 5, flexWrap: "wrap", flex: 1, alignItems: "center" }}>
                       <SevBadge s={f.severity} />
                       <StatusBadge s={f.status} />
-                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)" }}>{f.id}</span>
+                      {f.kevListed && <KevBadge />}
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: pc, background: `${pc}12`, border: `1px solid ${pc}25`, borderRadius: 3, padding: "1px 4px" }}>{f.aiTriage.priority}</span>
                     </div>
-                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: sla.color }}>{sla.label}</span>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0 }}>
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 700, color: riskScoreColor(f.riskScore) }}>{f.riskScore}</span>
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 8, color: "var(--adv-text-muted)" }}>RISK</span>
+                    </div>
                   </div>
-                  <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600, color: "var(--adv-text)", lineHeight: 1.3, marginBottom: 4 }}>
+
+                  <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600, color: "var(--adv-text)", lineHeight: 1.3, marginBottom: 5 }}>
                     {f.title}
                   </div>
-                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
                     <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)" }}>{f.affectedHost}</span>
-                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "#FF6D00" }}>CVSS {f.cvss}</span>
+                    <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
+                      <DetectionPill cov={f.detectionCoverage} />
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: MATURITY_COLOR[f.exploitMaturity] }}>{f.exploitMaturity}</span>
+                    </div>
                   </div>
-                  {/* SLA mini-bar */}
-                  <div style={{ height: 2, background: "#E2E8F0", borderRadius: 1, marginTop: 6, overflow: "hidden" }}>
-                    <div className="progress-bar-fill" style={{ height: "100%", width: `${sla.pct}%`, background: sla.color, borderRadius: 1 }} />
+
+                  {/* EPSS mini */}
+                  <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)" }}>EPSS</span>
+                    <div style={{ flex: 1, height: 3, background: "rgba(100,116,139,0.15)", borderRadius: 2, overflow: "hidden" }}>
+                      <div style={{ height: "100%", width: `${f.epssScore * 100}%`, background: f.epssScore > 0.7 ? "#FF1744" : f.epssScore > 0.4 ? "#FF6D00" : "#FFD600", borderRadius: 2 }} />
+                    </div>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "var(--adv-text-muted)" }}>{(f.epssScore * 100).toFixed(0)}%</span>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "#FF6D00" }}>CVSS {f.cvss}</span>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: sla.color }}>{sla.label}</span>
+                  </div>
+
+                  {/* Risk bar */}
+                  <div style={{ height: 2, background: "rgba(100,116,139,0.15)", borderRadius: 1, overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${f.riskScore / 10}%`, background: riskScoreColor(f.riskScore), borderRadius: 1 }} />
                   </div>
                 </div>
               );
@@ -658,7 +1201,7 @@ export default function FindingsPage() {
         {/* ── Right: Detail ── */}
         {selected && (
           <div style={{ minWidth: 0 }}>
-            <FindingDetail f={selected} onStatusChange={handleStatusChange} />
+            <FindingDetail f={selected} allFindings={findings} onStatusChange={handleStatusChange} />
           </div>
         )}
       </div>

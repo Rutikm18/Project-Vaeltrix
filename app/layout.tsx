@@ -5,7 +5,7 @@ import { ThemeProvider } from "../components/ThemeProvider";
 import { QueryProvider } from "../components/QueryProvider";
 
 export const metadata: Metadata = {
-  title: "ADVERSA — AI-Powered VAPT Platform",
+  title: "ADVERSA — Ops Platform",
   description: "End-to-end autonomous red-team & security operations platform",
 };
 
@@ -15,12 +15,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         {/* Anti-FOUC: apply stored theme before first paint */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();`,
+            __html: `(function(){try{var s=localStorage.getItem('adversa-theme');var p=window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',s||p);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();`,
           }}
         />
         <link rel="preconnect" href="https://fonts.googleapis.com" />

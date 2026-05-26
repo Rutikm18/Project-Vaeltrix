@@ -54,6 +54,9 @@ export interface Finding {
   validatedBy?: string;
   validatedAt?: string;
   falsePositiveReason?: string;
+  source?: "nmap" | "nuclei" | "openvas" | "netexec" | "impacket" | "testssl" | "eyewitness" | "manual";
+  confirmedBy?: string[];
+  cves?: string[];
 }
 
 const DATA_FILE = path.join(process.cwd(), "data", "findings.json");
@@ -300,6 +303,54 @@ export function deleteFinding(id: string): boolean {
   if (next.length === findings.length) return false;
   writeFindings(next);
   return true;
+}
+
+function normalizeTitle(title: string): string {
+  return title.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function titlesMatch(a: string, b: string): boolean {
+  return normalizeTitle(a) === normalizeTitle(b);
+}
+
+function sharesCve(a: Finding, b: { cves?: string[] }): boolean {
+  const aCves = a.cves ?? [];
+  const bCves = b.cves ?? [];
+  return aCves.length > 0 && bCves.length > 0 && aCves.some((c) => bCves.includes(c));
+}
+
+export function findDuplicate(candidate: Pick<Finding, "affectedHost" | "title"> & { cves?: string[] }): Finding | undefined {
+  const findings = readFindings();
+  return findings.find(
+    (f) =>
+      f.affectedHost === candidate.affectedHost &&
+      (titlesMatch(f.title, candidate.title) || sharesCve(f, candidate)),
+  );
+}
+
+export function upsertFinding(candidate: Omit<Finding, "id" | "discoveredAt" | "updatedAt" | "slaDeadline">): {
+  id: string;
+  created: boolean;
+} {
+  const existing = findDuplicate(candidate);
+  if (existing) {
+    // Merge new evidence and update confirmedBy
+    const mergedEvidence = [...existing.evidence, ...candidate.evidence];
+    const confirmedBy = [...new Set([...(existing.confirmedBy ?? []), ...(candidate.source ? [candidate.source] : [])])];
+    updateFinding(existing.id, { evidence: mergedEvidence, confirmedBy, updatedAt: new Date().toISOString() });
+    return { id: existing.id, created: false };
+  }
+  const created = createFinding(candidate);
+  return { id: created.id, created: true };
+}
+
+export function attachScreenshot(findingId: string, screenshotPath: string, label = "Screenshot"): Finding | null {
+  return updateFinding(findingId, {
+    evidence: [
+      ...(getFindingById(findingId)?.evidence ?? []),
+      { label, content: `Screenshot: ${screenshotPath}` },
+    ],
+  });
 }
 
 export function getSlaInfo(f: Finding): {
