@@ -9,7 +9,7 @@ WORKDIR /app
 
 COPY package.json package-lock.json* ./
 
-# ci install is reproducible; uses lockfile exactly
+# ci install is reproducible; uses lockfile exactly (includes tsx + commander for CLI)
 RUN npm ci
 
 # ── Stage 2: build Next.js standalone bundle ─────────────────────────────────
@@ -71,6 +71,17 @@ RUN curl -sSfL https://raw.githubusercontent.com/drwetter/testssl.sh/3.2/testssl
 COPY --from=builder /app/public                           ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static     ./.next/static
+
+# ── CLI — install node_modules for tsx runner ────────────────────────────────
+# Copy devDeps (tsx, commander) so the CLI works inside the container
+COPY --from=deps /app/node_modules ./node_modules
+COPY cli    ./cli
+COPY lib    ./lib
+COPY bin    ./bin
+COPY tsconfig.cli.json ./
+
+# Link 'adversa' so it's on PATH for the nextjs user too
+RUN chmod +x /app/bin/adversa && ln -sf /app/bin/adversa /usr/local/bin/adversa
 
 USER nextjs
 

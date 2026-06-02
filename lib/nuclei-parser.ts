@@ -1,155 +1,104 @@
-import type { Finding, FindingSeverity } from "./findings-store";
+import type { Severity } from './engine/types';
 
-export interface NucleiMatch {
+export type NucleiMatch = {
   templateId: string;
-  templateName: string;
-  severity: string;
-  host: string;
-  ip: string;
-  port: string;
-  matchedAt: string;
-  type: string;
-  extractedResults?: string[];
-  curlCommand?: string;
-  timestamp: string;
-  cvss?: string;
-  cve?: string;
-  reference?: string[];
-  tags: string[];
-}
-
-export interface NucleiRawLine {
-  "template-id": string;
-  info: {
-    name: string;
-    severity: string;
-    tags?: string[];
-    description?: string;
-    reference?: string[];
-    classification?: { "cvss-score"?: number; "cve-id"?: string };
-  };
+  name: string;
+  severity: 'critical' | 'high' | 'medium' | 'low' | 'info' | 'unknown';
+  description?: string;
   host: string;
   ip?: string;
-  port?: string;
-  "matched-at": string;
-  "extracted-results"?: string[];
-  "curl-command"?: string;
+  port?: number;
+  matchedAt: string;
+  cveIds: string[];
+  extractedResults: string[];
   timestamp: string;
-  type?: string;
-}
-
-const SEVERITY_MAP: Record<string, FindingSeverity> = {
-  critical: "CRITICAL",
-  high:     "HIGH",
-  medium:   "MEDIUM",
-  low:      "LOW",
-  info:     "INFO",
 };
 
-function deriveCategory(tags: string[]): string {
-  if (tags.some((t) => ["cve", "cves"].includes(t))) return "CVE";
-  if (tags.some((t) => t.includes("panel") || t.includes("login"))) return "Exposed Panel";
-  if (tags.some((t) => ["misconfiguration", "misconfig", "misconfigs"].includes(t))) return "Misconfiguration";
-  if (tags.some((t) => t === "ssl" || t === "tls")) return "Cryptographic / TLS";
-  if (tags.some((t) => ["default-login", "default-logins"].includes(t))) return "Default Credentials";
-  if (tags.some((t) => t === "takeover")) return "Subdomain Takeover";
-  if (tags.some((t) => t === "network")) return "Network Service";
-  return "Vulnerability";
+interface NucleiRaw {
+  'template-id'?: string;
+  info?: {
+    name?: string;
+    severity?: string;
+    description?: string;
+    classification?: {
+      'cve-id'?: string | string[];
+    };
+  };
+  host?: string;
+  ip?: string;
+  port?: string | number;
+  'matched-at'?: string;
+  'extracted-results'?: string[];
+  timestamp?: string;
 }
 
-function deriveImpact(match: NucleiMatch): string {
-  if (match.severity === "critical") return `Critical vulnerability on ${match.ip}. Immediate exploitation likely.`;
-  if (match.severity === "high")     return `High-severity issue on ${match.ip}. Exploitable with low effort.`;
-  return `${match.templateName} detected on ${match.matchedAt}.`;
+export function parseNucleiLine(jsonl: string): NucleiMatch | null {
+  if (!jsonl || !jsonl.trim()) return null;
+  try {
+    const raw = JSON.parse(jsonl.trim()) as NucleiRaw;
+    if (!raw['template-id'] || !raw.host) return null;
+
+    const rawCves = raw.info?.classification?.['cve-id'];
+    const cveIds = rawCves
+      ? (Array.isArray(rawCves) ? rawCves : [rawCves]).filter(Boolean)
+      : [];
+
+    const sevRaw = (raw.info?.severity ?? 'unknown').toLowerCase();
+    const severity = (['critical', 'high', 'medium', 'low', 'info'].includes(sevRaw)
+      ? sevRaw
+      : 'unknown') as NucleiMatch['severity'];
+
+    const port = raw.port ? Number(raw.port) : undefined;
+
+    return {
+      templateId:       raw['template-id'],
+      name:             raw.info?.name ?? raw['template-id'],
+      severity,
+      description:      raw.info?.description,
+      host:             raw.host,
+      ip:               raw.ip,
+      port:             port && !isNaN(port) ? port : undefined,
+      matchedAt:        raw['matched-at'] ?? raw.host,
+      cveIds,
+      extractedResults: raw['extracted-results'] ?? [],
+      timestamp:        raw.timestamp ?? new Date().toISOString(),
+    };
+  } catch {
+    return null;
+  }
 }
 
-function deriveRemediation(match: NucleiMatch): Finding["remediation"] {
-  const steps: Finding["remediation"] = [
-    {
-      step: 1,
-      title: "Investigate and confirm",
-      description: `Review the Nuclei finding for ${match.templateId} on ${match.matchedAt}. Confirm the vulnerability is genuine.`,
-      estimatedHours: 0.5,
-      completed: false,
-    },
-    {
-      step: 2,
-      title: "Apply vendor patch or configuration fix",
-      description: match.reference?.[0]
-        ? `Refer to: ${match.reference[0]}`
-        : "Apply the latest security patch or harden the service configuration.",
-      estimatedHours: 2,
-      completed: false,
-    },
-  ];
-  return steps;
+export function nucleiSeverityToSeverity(s: string): Severity {
+  switch (s.toLowerCase()) {
+    case 'critical': return 'CRITICAL';
+    case 'high':     return 'HIGH';
+    case 'medium':   return 'MEDIUM';
+    case 'low':      return 'LOW';
+    default:         return 'INFO';
+  }
 }
 
-function computeRiskScore(severity: string): number {
-  return { critical: 95, high: 75, medium: 50, low: 25, info: 5 }[severity] ?? 10;
-}
+// ── Backwards-compat shims for pre-refactor dashboard routes ──────────
+export type NucleiRawLine = NucleiMatch;
 
-function deriveCvss(severity: string): string {
-  return { critical: "9.8", high: "7.5", medium: "5.0", low: "3.1", info: "0.0" }[severity] ?? "0.0";
-}
-
-export function parseNucleiLine(raw: NucleiRawLine): NucleiMatch {
+export function nucleiMatchToFinding(match: NucleiMatch): Record<string, unknown> {
   return {
-    templateId:       raw["template-id"],
-    templateName:     raw.info.name,
-    severity:         raw.info.severity,
-    host:             raw.host,
-    ip:               raw.ip ?? raw.host.replace(/https?:\/\//, "").split(":")[0],
-    port:             raw.port ?? raw["matched-at"].split(":")[2]?.split("/")[0] ?? "",
-    matchedAt:        raw["matched-at"],
-    type:             raw.type ?? "http",
-    extractedResults: raw["extracted-results"],
-    curlCommand:      raw["curl-command"],
-    timestamp:        raw.timestamp,
-    cvss:             raw.info.classification?.["cvss-score"]?.toString(),
-    cve:              raw.info.classification?.["cve-id"],
-    reference:        raw.info.reference,
-    tags:             raw.info.tags ?? [],
+    title:     match.name,
+    severity:  nucleiSeverityToSeverity(match.severity),
+    host:      match.host,
+    port:      match.port,
+    source:    'nuclei',
+    cveIds:    match.cveIds,
+    evidence:  [{ label: 'nuclei match', content: match.matchedAt, timestamp: match.timestamp }],
+    status:    'OPEN',
+    timestamp: match.timestamp,
   };
 }
 
-export function nucleiMatchToFinding(
-  match: NucleiMatch,
-): Omit<Finding, "id" | "discoveredAt" | "updatedAt" | "slaDeadline"> {
-  return {
-    title:            match.templateName,
-    severity:         SEVERITY_MAP[match.severity] ?? "INFO",
-    cvss:             match.cvss ?? deriveCvss(match.severity),
-    cvssVector:       "",
-    category:         deriveCategory(match.tags),
-    status:           "OPEN",
-    affectedHost:     match.ip,
-    description:      `${match.templateName} detected on ${match.matchedAt}`,
-    technicalDetails: match.curlCommand
-      ? `Template: ${match.templateId}\nMatched at: ${match.matchedAt}\n\n${match.curlCommand}`
-      : `Template: ${match.templateId}\nMatched at: ${match.matchedAt}`,
-    attackPath:       `External → ${match.ip}:${match.port} → ${match.templateId}`,
-    evidence: [
-      { label: "Nuclei Match", content: JSON.stringify(match, null, 2) },
-      ...(match.curlCommand ? [{ label: "Reproduction Command", content: match.curlCommand }] : []),
-      ...(match.extractedResults?.length ? [{ label: "Extracted Data", content: match.extractedResults.join("\n") }] : []),
-    ],
-    impact:           deriveImpact(match),
-    businessImpact:   "",
-    exploitability:   match.severity === "critical" ? "EASY" : "MODERATE",
-    remediation:      deriveRemediation(match),
-    compliance:       [],
-    mitre:            [],
-    riskScore:        computeRiskScore(match.severity),
-    source:           "nuclei",
-  } as Omit<Finding, "id" | "discoveredAt" | "updatedAt" | "slaDeadline">;
-}
-
-export function countBySeverity(matches: NucleiMatch[]): Record<string, number> {
-  const stats = { critical: 0, high: 0, medium: 0, low: 0, info: 0 };
-  for (const m of matches) {
-    const key = m.severity.toLowerCase() as keyof typeof stats;
-    if (key in stats) stats[key]++;
+export function countBySeverity(findings: { severity: string }[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const f of findings) {
+    out[f.severity] = (out[f.severity] ?? 0) + 1;
   }
-  return stats;
+  return out;
 }

@@ -1,4 +1,6 @@
 // ScanningAgent store — agent registry, jobs, heartbeats, Kafka topic status
+import fs   from 'fs';
+import path from 'path';
 
 export type AgentStatus    = "ONLINE" | "OFFLINE" | "BUSY" | "ERROR";
 export type JobStatus      = "PENDING" | "RUNNING" | "COMPLETED" | "FAILED" | "CANCELLED";
@@ -313,3 +315,86 @@ export const agentsStore = {
     return { total: AGENTS.length, online, busy, pending, running };
   },
 };
+
+// ── File-based persistent store for CLI agents (Python agent protocol) ──────
+
+const FIELD_AGENTS_FILE = path.join(process.cwd(), 'data', 'agents.json');
+
+export interface FieldAgent {
+  id: string;
+  sessionId: string;
+  hostname: string;
+  os: string;
+  osVersion: string;
+  arch: string;
+  agentVersion: string;
+  capabilities: string[];
+  networkInterfaces: { name: string; ip: string; cidr: string }[];
+  status: 'ONLINE' | 'OFFLINE' | 'BUSY' | 'ERROR';
+  registeredAt: string;
+  lastSeen: string;
+}
+
+function ensureDataDir(): void {
+  const dir = path.dirname(FIELD_AGENTS_FILE);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+}
+
+function readFieldAgents(): FieldAgent[] {
+  ensureDataDir();
+  if (!fs.existsSync(FIELD_AGENTS_FILE)) return [];
+  try { return JSON.parse(fs.readFileSync(FIELD_AGENTS_FILE, 'utf-8')) as FieldAgent[]; }
+  catch { return []; }
+}
+
+function writeFieldAgents(agents: FieldAgent[]): void {
+  ensureDataDir();
+  fs.writeFileSync(FIELD_AGENTS_FILE, JSON.stringify(agents, null, 2));
+}
+
+function genFieldAgentId(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let s = '';
+  for (let i = 0; i < 6; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return `AGT-${s}`;
+}
+
+export function registerAgent(
+  data: Omit<FieldAgent, 'id' | 'registeredAt' | 'lastSeen' | 'status'>,
+): FieldAgent {
+  const agents = readFieldAgents();
+  const now    = new Date().toISOString();
+  const dup    = agents.find((a) => a.sessionId === data.sessionId);
+  if (dup) {
+    Object.assign(dup, { ...data, status: 'ONLINE' as const, lastSeen: now });
+    writeFieldAgents(agents);
+    return dup;
+  }
+  const agent: FieldAgent = {
+    id: genFieldAgentId(),
+    ...data,
+    status: 'ONLINE',
+    registeredAt: now,
+    lastSeen: now,
+  };
+  agents.push(agent);
+  writeFieldAgents(agents);
+  return agent;
+}
+
+export function updateAgentLastSeen(agentId: string): void {
+  const agents = readFieldAgents();
+  const agent  = agents.find((a) => a.id === agentId);
+  if (!agent) return;
+  agent.lastSeen = new Date().toISOString();
+  if (agent.status === 'OFFLINE') agent.status = 'ONLINE';
+  writeFieldAgents(agents);
+}
+
+export function getAllAgents(): FieldAgent[] {
+  return readFieldAgents();
+}
+
+export function getAgent(agentId: string): FieldAgent | undefined {
+  return readFieldAgents().find((a) => a.id === agentId);
+}

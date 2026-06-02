@@ -290,8 +290,8 @@ async function runNucleiStage(
       for (const raw of lines) {
         if (!raw.trim()) continue;
         try {
-          const parsed  = JSON.parse(raw) as NucleiRawLine;
-          const match   = parseNucleiLine(parsed);
+          const match   = parseNucleiLine(raw);
+          if (!match) continue;
           matches.push(match);
 
           const sev = match.severity.toUpperCase() as "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "INFO";
@@ -301,7 +301,7 @@ async function runNucleiStage(
             type: "finding",
             finding: {
               id:        `nuclei-${Date.now()}-${matches.length}`,
-              title:     match.templateName,
+              title:     match.name ?? match.templateId,
               severity:  sev,
               host:      match.ip,
               source:    "CVE Engine",

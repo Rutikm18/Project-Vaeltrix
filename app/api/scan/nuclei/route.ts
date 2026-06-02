@@ -78,8 +78,8 @@ export async function POST(req: NextRequest) {
     const lines = fs.readFileSync(outputFile, "utf-8").split("\n").filter(Boolean);
     for (const line of lines) {
       try {
-        const raw = JSON.parse(line) as NucleiRawLine;
-        matches.push(parseNucleiLine(raw));
+        const m = parseNucleiLine(line);
+        if (m) matches.push(m);
       } catch { /* skip malformed lines */ }
     }
     fs.unlinkSync(outputFile);

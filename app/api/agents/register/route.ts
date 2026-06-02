@@ -1,38 +1,53 @@
-import { NextResponse } from "next/server";
-import { agentsStore, type JobType } from "../../../../lib/agents-store";
+import { NextResponse }                              from "next/server";
+import { agentsStore, type JobType }                 from "../../../../lib/agents-store";
+import { registerAgent }                             from "../../../../lib/agents-store";
 
-// POST /agents/register
+// POST /api/agents/register — Python CLI agent self-registration
 export async function POST(request: Request) {
-  const body = await request.json().catch(() => ({}));
-  const { agentName, location, capabilities, networkSegments, ip, version } = body;
+  // Validate Bearer token against AGENT_SECRET
+  const auth   = request.headers.get("Authorization") ?? "";
+  const token  = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
+  const secret = process.env.AGENT_SECRET;
 
-  if (!agentName || !location || !Array.isArray(capabilities)) {
-    return NextResponse.json({ error: "agentName, location, and capabilities[] are required" }, { status: 400 });
+  if (!secret || !token || token !== secret) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const agent = agentsStore.register({ agentName, location, capabilities: capabilities as JobType[], networkSegments: networkSegments ?? [], ip, version });
+  const body = await request.json().catch(() => null) as Record<string, unknown> | null;
+  if (!body || typeof body !== "object") {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
 
-  // Simulate issuing mTLS cert and Vault role token
-  return NextResponse.json({
-    agentId:        agent.id,
-    vaultRoleToken: agent.vaultRoleToken,
-    tlsCert: `-----BEGIN CERTIFICATE-----\n[mTLS client cert for ${agent.id} — issued by ADVERSA CA]\n-----END CERTIFICATE-----`,
-    tlsCertExpiry:  agent.tlsCertExpiry,
-    platformApiUrl: "https://adversa.internal:8443",
-    instructions: [
-      "Store the tlsCert in your local secure keystore (e.g. /etc/adversa/certs/client.pem)",
-      "Use vaultRoleToken to authenticate with Vault and fetch credentials at runtime",
-      "Send heartbeats every 30s to POST /agents/{agentId}/heartbeat",
-      "Poll GET /agents/{agentId}/jobs for pending work every 10s",
-    ],
-  }, { status: 201 });
+  const { sessionId, hostname, os, osVersion, arch, agentVersion, capabilities, networkInterfaces } = body;
+  if (!sessionId || !hostname || !os) {
+    return NextResponse.json(
+      { error: "sessionId, hostname, and os are required" },
+      { status: 400 },
+    );
+  }
+
+  const agent = registerAgent({
+    sessionId:         String(sessionId),
+    hostname:          String(hostname),
+    os:                String(os),
+    osVersion:         osVersion != null ? String(osVersion) : "",
+    arch:              arch != null ? String(arch) : "",
+    agentVersion:      agentVersion != null ? String(agentVersion) : "0.1.0",
+    capabilities:      Array.isArray(capabilities) ? (capabilities as string[]) : [],
+    networkInterfaces: Array.isArray(networkInterfaces)
+      ? (networkInterfaces as { name: string; ip: string; cidr: string }[])
+      : [],
+  });
+
+  return NextResponse.json({ agentId: agent.id, registeredAt: agent.registeredAt });
 }
 
-// GET /agents/register — list all agents
+// GET /api/agents/register — dashboard agent + job + kafka overview
 export async function GET() {
-  const agents = agentsStore.listAgents();
-  const stats  = agentsStore.stats();
-  const jobs   = agentsStore.listJobs();
-  const topics = agentsStore.listTopics();
-  return NextResponse.json({ agents, stats, jobs, topics });
+  return NextResponse.json({
+    agents: agentsStore.listAgents(),
+    stats:  agentsStore.stats(),
+    jobs:   agentsStore.listJobs(),
+    topics: agentsStore.listTopics(),
+  });
 }

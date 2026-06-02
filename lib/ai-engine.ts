@@ -178,8 +178,8 @@ async function callAnthropicWithRetry(
         body: JSON.stringify({ model: MODEL, max_tokens: MAX_TOKENS, temperature: 0.3, system: SYSTEM_PROMPT, messages }),
       });
       if (res.ok) {
-        const data = await res.json();
-        return data.content[0].text as string;
+        const data = await res.json() as { content: { text: string }[] };
+        return data.content[0].text;
       }
       lastErr = new Error(`Anthropic API ${res.status}: ${await res.text()}`);
     } catch (e) {
@@ -396,3 +396,106 @@ export const aiReportStore = {
 
   hashPrompt,
 };
+
+// ── SDK-based AI functions (used by scanner pipeline + APIs) ────────────────
+
+import Anthropic from '@anthropic-ai/sdk';
+import type { LiveFinding } from './engine/types';
+import { TRIAGE_SYSTEM_PROMPT } from './prompts/triage';
+import { REPORT_SYSTEM_PROMPT } from './prompts/report';
+
+export interface ReportSession {
+  clientName:     string;
+  scope:          string[];
+  findings:       LiveFinding[];
+  exploitResults: unknown[];
+  engagementType: string;
+}
+
+export interface ReportResult {
+  executive_summary: string;
+  risk_scorecard:    Record<string, number>;
+  findings:          unknown[];
+  remediation_roadmap: Record<string, string[]>;
+  positive_findings:   string[];
+}
+
+function getClient(): Anthropic {
+  return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+}
+
+function stripFences(text: string): string {
+  return text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+}
+
+export async function triageFindings(findings: LiveFinding[]): Promise<LiveFinding[]> {
+  if (!process.env.ANTHROPIC_API_KEY) return findings;
+  if (findings.length === 0) return [];
+
+  try {
+    const client = getClient();
+    const msg = await client.messages.create({
+      model:      'claude-sonnet-4-6',
+      max_tokens: 8192,
+      system:     TRIAGE_SYSTEM_PROMPT,
+      messages:   [{ role: 'user', content: JSON.stringify({ findings, timestamp: new Date().toISOString() }) }],
+    });
+
+    const text    = (msg.content[0] as { text: string }).text;
+    const parsed  = JSON.parse(stripFences(text)) as {
+      findings: {
+        finding_id: string; severity: string; cvss_score: number;
+        cvss_vector: string | null; cve_ids: string[];
+        false_positive: boolean; false_positive_reason: string | null;
+      }[];
+    };
+
+    // Merge enriched data back onto original findings by host+title match
+    for (const enriched of parsed.findings) {
+      const orig = findings.find((f) => f.id === enriched.finding_id);
+      if (!orig) continue;
+      orig.severity            = enriched.severity as LiveFinding['severity'];
+      orig.cvss                = String(enriched.cvss_score);
+      orig.cvssVector          = enriched.cvss_vector ?? undefined;
+      orig.cveIds              = enriched.cve_ids;
+      orig.falsePositive       = enriched.false_positive;
+      orig.falsePositiveReason = enriched.false_positive_reason ?? undefined;
+    }
+
+    return findings.filter((f) => !f.falsePositive);
+  } catch (err) {
+    console.warn('[ai-engine] triageFindings failed, returning original findings:', err);
+    return findings;
+  }
+}
+
+export async function generateReport(session: ReportSession): Promise<ReportResult> {
+  const client = getClient();
+  try {
+    const msg = await client.messages.create({
+      model:      'claude-sonnet-4-6',
+      max_tokens: 8192,
+      system:     REPORT_SYSTEM_PROMPT,
+      messages:   [{ role: 'user', content: JSON.stringify(session) }],
+    });
+    const text = (msg.content[0] as { text: string }).text;
+    return JSON.parse(stripFences(text)) as ReportResult;
+  } catch (err) {
+    throw new Error(`Report generation failed: ${err instanceof Error ? err.message : String(err)}`);
+  }
+}
+
+export async function chat(
+  messages: { role: string; content: string }[],
+  systemContext?: string,
+): Promise<string> {
+  const client = getClient();
+  const system = systemContext ?? 'You are a senior penetration tester assistant. You provide tactical, accurate security advice. You never provide guidance outside of authorized security testing.';
+  const msg = await client.messages.create({
+    model:      'claude-sonnet-4-6',
+    max_tokens: 2048,
+    system,
+    messages:   messages as Anthropic.MessageParam[],
+  });
+  return (msg.content[0] as { text: string }).text;
+}
