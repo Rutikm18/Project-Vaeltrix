@@ -108,10 +108,18 @@ export function stageComplete(stage: string, message: string) {
 }
 
 export function stageError(stage: string, error: string) {
-  ln();
+  // Wipe any in-flight \r progress line, then push a blank line so the error
+  // can't be overwritten by the next stage's progress write.
+  w('\r' + ' '.repeat(78) + '\r');
   const label = STAGE_LABEL[stage] ?? stage;
   const col   = STAGE_COL[stage]   ?? c.blue;
-  ln(`  ${col}[${label}]${c.reset}  ${c.red}✗${c.reset}  ${error}`);
+  ln();
+  ln(`  ${col}[${label}]${c.reset}  ${c.red}✗${c.reset}  ${error.split('\n')[0]}`);
+  // Render the rest of multi-line error on subsequent rows (indented)
+  for (const extra of error.split('\n').slice(1)) {
+    if (extra.trim()) ln(`           ${extra}`);
+  }
+  ln();
 }
 
 // ── Host discovered ─────────────────────────────────────────────

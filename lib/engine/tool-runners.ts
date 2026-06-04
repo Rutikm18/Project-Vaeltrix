@@ -8,6 +8,7 @@ import { parseNucleiLine, nucleiSeverityToSeverity } from '../nuclei-parser';
 import { parseTestsslJson }                    from '../testssl-parser';
 import { parseNaabuLine, groupNaabuResults }   from '../naabu-parser';
 import { generateFindingId }                   from '../finding-id';
+import { diagnoseSpawnError, Errors }          from '../errors';
 
 // ── Stealth mappings (index = stealth level 0–9) ─────────────────
 const NAABU_RATE    = [0, 50, 100, 300, 500, 1000, 2000, 3000, 5000];
@@ -38,14 +39,19 @@ function spawnOpts(extraEnv?: Record<string, string>): SpawnOptions {
 }
 
 // ── Helper: run a process and stream stdout line by line ─────────
+// Captures stderr too so we can produce a useful error when things go wrong.
+interface ProcessResult { code: number; stderr: string; }
+
 function streamProcess(
   bin:     string,
   args:    string[],
   onLine:  (line: string) => void,
   opts?:   SpawnOptions,
-): Promise<number> {
+): Promise<ProcessResult> {
   return new Promise((resolve) => {
     let buf = '';
+    let stderr = '';
+    let spawnError = '';
     const proc = spawn(bin, args, opts ?? spawnOpts());
 
     proc.stdout?.on('data', (chunk: Buffer | string) => {
@@ -54,22 +60,30 @@ function streamProcess(
       buf = lines.pop() ?? '';
       for (const l of lines) if (l.trim()) onLine(l);
     });
+    proc.stderr?.on('data', (chunk: Buffer | string) => {
+      stderr += chunk.toString();
+    });
 
-    proc.on('error', () => resolve(-1));
+    proc.on('error', (err) => {
+      spawnError = err.message;
+      resolve({ code: -1, stderr: stderr || spawnError });
+    });
     proc.on('close', (code) => {
       if (buf.trim()) onLine(buf);
-      resolve(code ?? 0);
+      resolve({ code: code ?? 0, stderr });
     });
   });
 }
 
-function collectProcess(bin: string, args: string[], opts?: SpawnOptions): Promise<{ stdout: string; code: number }> {
+function collectProcess(bin: string, args: string[], opts?: SpawnOptions): Promise<{ stdout: string; code: number; stderr: string }> {
   return new Promise((resolve) => {
     let stdout = '';
+    let stderr = '';
     const proc = spawn(bin, args, opts ?? spawnOpts());
     proc.stdout?.on('data', (c: Buffer | string) => { stdout += c.toString(); });
-    proc.on('error', () => resolve({ stdout, code: -1 }));
-    proc.on('close', (code) => resolve({ stdout, code: code ?? 0 }));
+    proc.stderr?.on('data', (c: Buffer | string) => { stderr += c.toString(); });
+    proc.on('error', (err) => resolve({ stdout, code: -1, stderr: err.message }));
+    proc.on('close', (code) => resolve({ stdout, code: code ?? 0, stderr }));
   });
 }
 
@@ -82,7 +96,7 @@ export async function runNaabu(
   const rate    = NAABU_RATE[Math.min(stealth, 9)] ?? 1000;
   const results: import('../naabu-parser').NaabuResult[] = [];
 
-  const code = await streamProcess(
+  const { code, stderr } = await streamProcess(
     binName('naabu'),
     ['-host', targets.join(','), '-rate', String(rate), '-s', 'c', '-json', '-silent'],
     (line) => {
@@ -100,7 +114,9 @@ export async function runNaabu(
     spawnOpts(),
   );
 
-  if (code === -1) cb.onError('naabu', 'naabu not found or failed to start');
+  if (code !== 0 && results.length === 0) {
+    cb.onError('naabu', diagnoseSpawnError('naabu', code, stderr).render(false));
+  }
   return groupNaabuResults(results);
 }
 
@@ -117,14 +133,14 @@ export async function runNmap(
   const portArg  = allPorts.length > 0 ? allPorts.join(',') : '1-1000';
   const ips      = hosts.map((h) => h.ip);
 
-  const { stdout, code } = await collectProcess(
+  const { stdout, code, stderr } = await collectProcess(
     binName('nmap'),
     ['-sT', '-sV', `-T${timing}`, '-p', portArg, '--script', 'banner,ssl-cert,http-title', '-oX', '-', ...ips],
     spawnOpts(),
   );
 
-  if (code === -1) {
-    cb.onError('nmap', 'nmap not found or failed to start');
+  if (code !== 0 && !stdout) {
+    cb.onError('nmap', diagnoseSpawnError('nmap', code, stderr).render(false));
     return;
   }
 
@@ -172,7 +188,7 @@ export async function runNuclei(
     ...urls.flatMap((u) => ['-u', u]),
   ];
 
-  const code = await streamProcess(
+  const { code, stderr } = await streamProcess(
     binName('nuclei'),
     args,
     (line) => {
@@ -197,7 +213,9 @@ export async function runNuclei(
     spawnOpts({ HOME: '/opt' }),
   );
 
-  if (code === -1) cb.onError('nuclei', 'nuclei not found or failed to start');
+  if (code !== 0 && findings.length === 0) {
+    cb.onError('nuclei', diagnoseSpawnError('nuclei', code, stderr).render(false));
+  }
   return findings;
 }
 
@@ -216,14 +234,14 @@ export async function runTestssl(
     const port    = host.ports.find((p) => TLS_PORTS.has(p)) ?? 443;
     const outFile = join(tmpdir(), `adv-testssl-${host.ip}-${Date.now()}.json`);
 
-    const { code } = await collectProcess(
+    const { code, stderr } = await collectProcess(
       binName('testssl'),
       ['--fast', '--jsonfile', outFile, '--color', '0', '--quiet', `${host.ip}:${port}`],
       spawnOpts(),
     );
 
-    if (code === -1) {
-      cb.onError('testssl', 'testssl.sh not found or failed to start');
+    if (code !== 0 && !existsSync(outFile)) {
+      cb.onError('testssl', diagnoseSpawnError('testssl', code, stderr).render(false));
       continue;
     }
 
