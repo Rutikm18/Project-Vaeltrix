@@ -197,86 +197,78 @@ else
   pkg_install node
 fi
 
-# ── Go ─────────────────────────────────────────────────────────────
-step "Go (for naabu + nuclei)"
-if command -v go >/dev/null 2>&1; then
-  skip "Go $(go version | awk '{print $3}')"
-else
-  pkg_install go
-fi
-
-# ── libpcap (naabu dependency) ─────────────────────────────────────
-step "libpcap (naabu dependency)"
-if [[ "$OS_KIND" == "macos" ]]; then
-  pkg_install libpcap
-else
-  pkg_install libpcap-dev
-fi
-
-# ── nmap ───────────────────────────────────────────────────────────
+# ── nmap (still needed as a system binary — no portable bundle) ─────
 step "nmap"
 pkg_install nmap
 
-# ── PATH for Go binaries ───────────────────────────────────────────
-step "Ensuring ~/go/bin on PATH"
-GO_BIN="$HOME/go/bin"
-mkdir -p "$GO_BIN"
-export PATH="$GO_BIN:$PATH"
-
-# Persist in shell init (idempotent)
-SHELL_RC=""
-case "$(basename "${SHELL:-}")" in
-  zsh)  SHELL_RC="$HOME/.zprofile" ;;
-  bash) SHELL_RC="$HOME/.bashrc" ;;
-esac
-if [[ -n "$SHELL_RC" ]] && [[ -f "$SHELL_RC" ]] && ! grep -q 'go/bin' "$SHELL_RC"; then
-  if $DRY_RUN; then
-    info "would append: export PATH=\"\$HOME/go/bin:\$PATH\" to $SHELL_RC"
-  else
-    echo 'export PATH="$HOME/go/bin:$PATH"' >> "$SHELL_RC"
-    ok "Updated $SHELL_RC"
-  fi
-else
-  skip "PATH already configured"
-fi
-
-# ── naabu ──────────────────────────────────────────────────────────
-step "naabu (port discovery)"
-if command -v naabu >/dev/null 2>&1; then
-  skip "naabu $(naabu -version 2>&1 | head -1 || echo 'installed')"
-else
-  info "Installing via \`go install\` (may take a minute)"
-  run go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest
-  ok "naabu installed"
-fi
-
-# Smoke-test naabu — catches the libpcap-not-on-DYLD-path failure mode on macOS
+# ── libpcap (only if naabu later wants raw sockets on Mac) ─────────
 if [[ "$OS_KIND" == "macos" ]]; then
-  if ! naabu -version >/dev/null 2>&1; then
-    info "Priming libpcap for naabu"
-    if ! DYLD_LIBRARY_PATH=/opt/homebrew/lib naabu -version >/dev/null 2>&1; then
-      warn "naabu installed but cannot run — libpcap may need re-linking"
-      warn "Try: brew reinstall libpcap && brew link --force libpcap"
-    fi
+  pkg_install libpcap
+fi
+
+# ── Bundled scanner tools (managed by ADVERSA itself) ───────────────
+# This is what makes client deployments hands-off: naabu, nuclei, httpx,
+# subfinder, ffuf get downloaded by `adversa tools install` into
+# ~/.adversa/tools/ with pinned versions. No go install, no homebrew.
+step "Bundled scanner tools (naabu, httpx, nuclei, subfinder, ffuf)"
+if $DRY_RUN; then
+  info "would run: ./run.sh cli tools install"
+else
+  npx tsx cli/index.ts tools install \
+    && ok "Bundled tools installed into ~/.adversa/tools/" \
+    || warn "Bundled tool install failed — native fallbacks will be used. See $INSTALL_LOG."
+fi
+
+# Legacy support: keep go-install-from-source if the user already has Go.
+# Power users may want naabu on PATH too — but clients don't need this.
+install_go_tool() {
+  local name="$1" pkg="$2"
+  if command -v "$name" >/dev/null 2>&1; then
+    skip "$name (system)"
+  fi
+}
+
+install_go_tool subfinder "github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest"
+install_go_tool httpx     "github.com/projectdiscovery/httpx/cmd/httpx@latest"
+
+# ffuf (brew) — for directory busting
+if command -v ffuf >/dev/null 2>&1; then
+  skip "ffuf"
+else
+  if [[ "$OS_KIND" == "macos" ]]; then
+    pkg_install ffuf
+  else
+    run go install -v github.com/ffuf/ffuf/v2@latest
+    ok "ffuf"
   fi
 fi
 
-# ── nuclei ─────────────────────────────────────────────────────────
-step "nuclei (CVE scanner)"
-if command -v nuclei >/dev/null 2>&1; then
-  skip "nuclei $(nuclei -version 2>&1 | head -1 || echo 'installed')"
+# whatweb (brew) — tech fingerprint
+if command -v whatweb >/dev/null 2>&1; then
+  skip "whatweb"
+elif [[ "$OS_KIND" == "macos" ]]; then
+  pkg_install whatweb || warn "whatweb not in brew — try: gem install whatweb"
 else
-  info "Installing via \`go install\` (may take a minute)"
-  run go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest
-  ok "nuclei installed"
+  warn "whatweb missing — install with: gem install whatweb"
 fi
 
-# Pre-fetch nuclei templates so first scan doesn't pause
-info "Updating nuclei templates"
-if $DRY_RUN; then
-  info "would run: nuclei -update-templates -silent"
+# ssh-audit (pip)
+if command -v ssh-audit >/dev/null 2>&1; then
+  skip "ssh-audit"
 else
-  nuclei -update-templates -silent >> "$INSTALL_LOG" 2>&1 || warn "template update failed — first scan will retry"
+  info "Installing ssh-audit via pip"
+  if command -v pip3 >/dev/null 2>&1; then
+    run pip3 install --quiet --user ssh-audit
+    ok "ssh-audit"
+  else
+    warn "pip3 missing — ssh-audit will be unavailable"
+  fi
+fi
+
+# SecLists (wordlists for ffuf) — best-effort
+if [[ "$OS_KIND" == "macos" ]] && ! brew list seclists >/dev/null 2>&1; then
+  info "Installing SecLists (wordlists for ffuf) — large download"
+  brew install --quiet seclists >> "$INSTALL_LOG" 2>&1 || warn "seclists install failed — ffuf will need ADVERSA_FFUF_WORDLIST set"
 fi
 
 # ── testssl.sh ─────────────────────────────────────────────────────

@@ -4,106 +4,85 @@
 
 ▲ Next.js 16.2.6 (Turbopack)
 - Local:         http://localhost:3000
-- Network:       http://192.168.1.48:3000
+- Network:       http://10.160.8.104:3000
 - Environments: .env.local
-✓ Ready in 576ms
+✓ Ready in 493ms
 
-(node:91213) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(node:33592) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
- GET / 200 in 1565ms (next.js: 1240ms, application-code: 325ms)
- GET / 200 in 2.4s (next.js: 1035ms, application-code: 1340ms)
-○ Compiling /_not-found/page ...
- GET /sw.js 404 in 4.6s (next.js: 4.5s, application-code: 75ms)
- GET / 200 in 123ms (next.js: 8ms, application-code: 114ms)
- GET /api/engagements 401 in 111ms (next.js: 91ms, application-code: 20ms)
- GET /engagements 200 in 57ms (next.js: 35ms, application-code: 22ms)
- GET /aibrain 200 in 45ms (next.js: 25ms, application-code: 19ms)
- GET /scan 200 in 39ms (next.js: 23ms, application-code: 15ms)
- GET /exploit 200 in 60ms (next.js: 32ms, application-code: 28ms)
- GET /ai-report 200 in 51ms (next.js: 30ms, application-code: 22ms)
- GET /agents 200 in 41ms (next.js: 22ms, application-code: 19ms)
- GET /api/agents/register 200 in 38ms (next.js: 32ms, application-code: 6ms)
- GET /api/kafka/topics 200 in 96ms (next.js: 87ms, application-code: 9ms)
- GET /api/engagements/ENG-001/ai-report/draft 200 in 943ms (next.js: 930ms, application-code: 13ms)
- GET /api/engagements/ENG-001/ai-report/draft 200 in 15ms (next.js: 8ms, application-code: 7ms)
- GET /api/engagements/ENG-001/vuln-prioritizer 200 in 1029ms (next.js: 1019ms, application-code: 10ms)
- GET /api/engagements/ENG-001/vuln-prioritizer 200 in 29ms (next.js: 9ms, application-code: 20ms)
- GET /agents 200 in 32ms (next.js: 4ms, application-code: 28ms)
- GET /attack-graph 200 in 43ms (next.js: 27ms, application-code: 15ms)
- GET /api/engagements/ENG-001/chokepoints 200 in 680ms (next.js: 668ms, application-code: 12ms)
- GET /api/engagements/ENG-001/chokepoints 200 in 19ms (next.js: 8ms, application-code: 10ms)
- GET /api/engagements/ENG-001/attack-graph 200 in 771ms (next.js: 763ms, application-code: 8ms)
- GET /api/engagements/ENG-001/attack-graph 200 in 13ms (next.js: 7ms, application-code: 5ms)
- GET /api/engagements/ENG-001/attack-paths 200 in 804ms (next.js: 798ms, application-code: 6ms)
- GET /api/engagements/ENG-001/attack-paths 200 in 15ms (next.js: 9ms, application-code: 6ms)
- GET /active-directory 200 in 81ms (next.js: 48ms, application-code: 33ms)
- GET /api/ad 200 in 55ms (next.js: 50ms, application-code: 5ms)
- GET /api/ad 200 in 8ms (next.js: 3ms, application-code: 5ms)
- GET /segmentation 200 in 54ms (next.js: 29ms, application-code: 25ms)
- GET /findings 200 in 47ms (next.js: 31ms, application-code: 16ms)
- GET /cases 200 in 33ms (next.js: 21ms, application-code: 12ms)
- GET /api/cases 200 in 30ms (next.js: 27ms, application-code: 3ms)
- GET /api/cases 200 in 4ms (next.js: 1337µs, application-code: 2ms)
- GET /reports 200 in 57ms (next.js: 36ms, application-code: 20ms)
- GET /settings 200 in 107ms (next.js: 26ms, application-code: 81ms)
- GET /sw.js 404 in 53ms (next.js: 16ms, application-code: 37ms)
- GET / 200 in 19ms (next.js: 6ms, application-code: 13ms)
- GET /engagements 200 in 20ms (next.js: 4ms, application-code: 16ms)
- GET /aibrain 200 in 22ms (next.js: 6ms, application-code: 16ms)
- GET /scan 200 in 18ms (next.js: 3ms, application-code: 15ms)
+ GET / 200 in 1042ms (next.js: 716ms, application-code: 326ms)
+ GET / 200 in 134ms (next.js: 20ms, application-code: 114ms)
+ OPTIONS / 400 in 4ms
+ OPTIONS / 400 in 2ms
+ GET /nice%20ports%2C/Tri%6Eity.txt%2ebak 404 in 103ms (next.js: 60ms, application-code: 43ms)
+ GET / 200 in 51ms (next.js: 3ms, application-code: 48ms)
+ GET / 200 in 73ms (next.js: 9ms, application-code: 64ms)
+ OPTIONS / 400 in 2ms
+ OPTIONS / 400 in 4ms
+ GET /nice%20ports%2C/Tri%6Eity.txt%2ebak 404 in 28ms (next.js: 5ms, application-code: 23ms)
+ GET / 200 in 45ms (next.js: 1493µs, application-code: 43ms)
+ GET / 200 in 155ms (next.js: 19ms, application-code: 136ms)
+ OPTIONS / 400 in 3ms
+ OPTIONS / 400 in 1617µs
+ GET /nice%20ports%2C/Tri%6Eity.txt%2ebak 404 in 37ms (next.js: 9ms, application-code: 28ms)
+ GET / 200 in 64ms (next.js: 2ms, application-code: 62ms)
+ GET / 200 in 91ms (next.js: 8ms, application-code: 83ms)
+ OPTIONS / 400 in 1652µs
+ OPTIONS / 400 in 1381µs
+ GET /nice%20ports%2C/Tri%6Eity.txt%2ebak 404 in 28ms (next.js: 4ms, application-code: 24ms)
+ GET / 200 in 62ms (next.js: 1516µs, application-code: 60ms)
+ GET / 200 in 125ms (next.js: 15ms, application-code: 110ms)
+ OPTIONS / 400 in 4ms
+ OPTIONS / 400 in 1753µs
+ GET /nice%20ports%2C/Tri%6Eity.txt%2ebak 404 in 27ms (next.js: 3ms, application-code: 24ms)
+ GET / 200 in 78ms (next.js: 4ms, application-code: 74ms)
+ GET / 200 in 123ms (next.js: 10ms, application-code: 113ms)
+ OPTIONS / 400 in 3ms
+ OPTIONS / 400 in 3ms
+ GET /nice%20ports%2C/Tri%6Eity.txt%2ebak 404 in 88ms (next.js: 3ms, application-code: 85ms)
+ GET / 200 in 115ms (next.js: 6ms, application-code: 108ms)
+ GET / 200 in 99ms (next.js: 13ms, application-code: 86ms)
+ OPTIONS / 400 in 1958µs
+ OPTIONS / 400 in 1240µs
+ GET /nice%20ports%2C/Tri%6Eity.txt%2ebak 404 in 30ms (next.js: 5ms, application-code: 24ms)
+ GET / 200 in 63ms (next.js: 1290µs, application-code: 62ms)
+ GET / 200 in 93ms (next.js: 8ms, application-code: 85ms)
+ OPTIONS / 400 in 3ms
+ OPTIONS / 400 in 1328µs
+ GET /nice%20ports%2C/Tri%6Eity.txt%2ebak 404 in 29ms (next.js: 4ms, application-code: 25ms)
+ GET / 200 in 98ms (next.js: 5ms, application-code: 92ms)
+ GET / 200 in 87ms (next.js: 8ms, application-code: 79ms)
+ OPTIONS / 400 in 5ms
+ OPTIONS / 400 in 1435µs
+ GET /nice%20ports%2C/Tri%6Eity.txt%2ebak 404 in 29ms (next.js: 6ms, application-code: 23ms)
+ GET / 200 in 95ms (next.js: 6ms, application-code: 89ms)
+ GET / 200 in 126ms (next.js: 16ms, application-code: 110ms)
+ OPTIONS / 400 in 6ms
+ OPTIONS / 400 in 4ms
+ GET /nice%20ports%2C/Tri%6Eity.txt%2ebak 404 in 35ms (next.js: 5ms, application-code: 29ms)
+ GET / 200 in 91ms (next.js: 16ms, application-code: 75ms)
+ GET / 200 in 119ms (next.js: 10ms, application-code: 109ms)
+ OPTIONS / 400 in 3ms
+ OPTIONS / 400 in 5ms
+ GET /nice%20ports%2C/Tri%6Eity.txt%2ebak 404 in 27ms (next.js: 4ms, application-code: 23ms)
+ GET / 200 in 46ms (next.js: 1750µs, application-code: 44ms)
+ GET / 200 in 193ms (next.js: 35ms, application-code: 158ms)
+ OPTIONS / 400 in 1644µs
+ OPTIONS / 400 in 2ms
+ GET /nice%20ports%2C/Tri%6Eity.txt%2ebak 404 in 29ms (next.js: 5ms, application-code: 24ms)
+ GET / 200 in 54ms (next.js: 3ms, application-code: 51ms)
+ GET / 200 in 54ms (next.js: 1572µs, application-code: 52ms)
+ GET / 200 in 72ms (next.js: 7ms, application-code: 65ms)
+ GET /api/auth/me 401 in 1249ms (next.js: 1155ms, application-code: 94ms)
+ POST /api/auth/request 200 in 883ms (next.js: 627ms, application-code: 256ms)
+ POST /api/auth/request 200 in 322ms (next.js: 195ms, application-code: 128ms)
 
-[ADVERSA DEV] OTP for you@yourorg.com: 192140
+[ADVERSA DEV] OTP for you@yourorg.com: 609911
 
- POST /api/auth/request 200 in 1131ms (next.js: 1115ms, application-code: 16ms)
- POST /api/auth/verify 200 in 291ms (next.js: 270ms, application-code: 21ms)
- GET /api/engagements 200 in 113ms (next.js: 53ms, application-code: 60ms)
- GET / 200 in 408ms (next.js: 108ms, application-code: 300ms)
- GET /engagements 200 in 357ms (next.js: 137ms, application-code: 221ms)
- GET /scan 200 in 1782ms (next.js: 283ms, application-code: 1499ms)
- GET /exploit 200 in 66ms (next.js: 17ms, application-code: 50ms)
- GET /agents 200 in 44ms (next.js: 17ms, application-code: 27ms)
- GET /api/agents/register 200 in 8ms (next.js: 4ms, application-code: 4ms)
- GET /api/kafka/topics 200 in 13ms (next.js: 10ms, application-code: 3ms)
- GET /ai-report 200 in 29ms (next.js: 10ms, application-code: 20ms)
- GET /api/engagements/ENG-001/vuln-prioritizer 200 in 15ms (next.js: 10ms, application-code: 5ms)
- GET /api/engagements/ENG-001/ai-report/draft 200 in 21ms (next.js: 18ms, application-code: 3ms)
- GET /api/engagements/ENG-001/vuln-prioritizer 200 in 9ms (next.js: 4ms, application-code: 5ms)
- GET /api/engagements/ENG-001/ai-report/draft 200 in 11ms (next.js: 9ms, application-code: 2ms)
- GET /attack-graph 200 in 24ms (next.js: 7ms, application-code: 16ms)
- GET /api/engagements/ENG-001/attack-graph 200 in 13ms (next.js: 7ms, application-code: 5ms)
- GET /api/engagements/ENG-001/attack-paths 200 in 20ms (next.js: 16ms, application-code: 4ms)
- GET /api/engagements/ENG-001/chokepoints 200 in 27ms (next.js: 23ms, application-code: 3ms)
- GET /api/engagements/ENG-001/attack-graph 200 in 5ms (next.js: 1681µs, application-code: 3ms)
- GET /api/engagements/ENG-001/attack-paths 200 in 9ms (next.js: 6ms, application-code: 3ms)
- GET /api/engagements/ENG-001/chokepoints 200 in 13ms (next.js: 10ms, application-code: 3ms)
- GET /active-directory 200 in 18ms (next.js: 5ms, application-code: 13ms)
- GET /api/ad 200 in 6ms (next.js: 3ms, application-code: 3ms)
- GET /api/ad 200 in 4ms (next.js: 1209µs, application-code: 3ms)
- GET /attack-graph 200 in 15ms (next.js: 2ms, application-code: 13ms)
- GET /api/engagements/ENG-001/attack-graph 200 in 7ms (next.js: 4ms, application-code: 3ms)
- GET /api/engagements/ENG-001/attack-paths 200 in 11ms (next.js: 9ms, application-code: 2ms)
- GET /api/engagements/ENG-001/chokepoints 200 in 16ms (next.js: 14ms, application-code: 3ms)
- GET /api/engagements/ENG-001/attack-graph 200 in 5ms (next.js: 1882µs, application-code: 3ms)
- GET /api/engagements/ENG-001/attack-paths 200 in 14ms (next.js: 9ms, application-code: 5ms)
- GET /api/engagements/ENG-001/chokepoints 200 in 23ms (next.js: 18ms, application-code: 5ms)
- GET /segmentation 200 in 23ms (next.js: 5ms, application-code: 18ms)
- GET /findings 200 in 40ms (next.js: 18ms, application-code: 21ms)
- GET /cases 200 in 33ms (next.js: 18ms, application-code: 15ms)
- GET /api/cases 200 in 9ms (next.js: 2ms, application-code: 6ms)
- GET /api/cases 200 in 5ms (next.js: 1673µs, application-code: 4ms)
- GET /cases 200 in 17ms (next.js: 4ms, application-code: 13ms)
- GET /reports 200 in 43ms (next.js: 11ms, application-code: 32ms)
- GET /settings 200 in 28ms (next.js: 9ms, application-code: 20ms)
- GET /api/auth/me 401 in 1895ms (next.js: 1891ms, application-code: 4ms)
- GET / 200 in 27ms (next.js: 9ms, application-code: 18ms)
- GET /api/engagements 401 in 5ms (next.js: 1604µs, application-code: 3ms)
- GET /engagements 200 in 78ms (next.js: 32ms, application-code: 45ms)
- GET /api/engagements 401 in 17ms (next.js: 9ms, application-code: 8ms)
- GET /aibrain 200 in 29ms (next.js: 9ms, application-code: 20ms)
- GET /scan 200 in 17ms (next.js: 3ms, application-code: 14ms)
- GET /api/auth/me 401 in 230ms (next.js: 145ms, application-code: 85ms)
- GET /scan 200 in 615ms (next.js: 174ms, application-code: 441ms)
- GET /api/auth/me 401 in 358ms (next.js: 188ms, application-code: 170ms)
- GET /api/auth/me 401 in 73ms (next.js: 30ms, application-code: 43ms)
- GET /api/engagements 200 in 258ms (next.js: 125ms, application-code: 133ms)
- GET /api/engagements 200 in 102ms (next.js: 49ms, application-code: 53ms)
+ POST /api/auth/request 200 in 155ms (next.js: 67ms, application-code: 89ms)
+ POST /api/auth/verify 200 in 534ms (next.js: 462ms, application-code: 72ms)
+
+[ADVERSA DEV] OTP for you@yourorg.com: 133943
+
+ POST /api/auth/request 200 in 87ms (next.js: 44ms, application-code: 43ms)
+ POST /api/auth/verify 200 in 27ms (next.js: 6ms, application-code: 21ms)

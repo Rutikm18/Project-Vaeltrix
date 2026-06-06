@@ -83,19 +83,36 @@ export class AdversaError extends Error {
     };
   }
 
-  /** Render for terminal display. Multi-line, ANSI colors. */
-  render(useColor = process.stdout.isTTY): string {
+  /**
+   * Render for terminal display. Multi-line, ANSI colors.
+   *
+   * @param opts.useColor  - colorize (default: TTY detect)
+   * @param opts.withMark  - prepend ✗ symbol (default: true). Set false when the
+   *                         caller already prints its own status marker.
+   * @param opts.verbose   - include Context: line for debugging
+   */
+  render(opts: { useColor?: boolean; withMark?: boolean; verbose?: boolean } = {}): string {
+    const useColor = opts.useColor ?? !!process.stdout.isTTY;
+    const withMark = opts.withMark ?? true;
+    const verbose  = opts.verbose  ?? false;
+
     const c = useColor
-      ? { red: '\x1b[1;31m', yellow: '\x1b[33m', cyan: '\x1b[1;36m', dim: '\x1b[2m', reset: '\x1b[0m', bold: '\x1b[1m' }
-      : { red: '', yellow: '', cyan: '', dim: '', reset: '', bold: '' };
+      ? { red: '\x1b[1;31m', cyan: '\x1b[1;36m', dim: '\x1b[2m', reset: '\x1b[0m', bold: '\x1b[1m' }
+      : { red: '', cyan: '', dim: '', reset: '', bold: '' };
 
     const lines: string[] = [];
-    lines.push(`${c.red}✗ ${c.bold}${this.title}${c.reset}`);
+    const mark = withMark ? `${c.red}✗ ${c.reset}` : '';
+    lines.push(`${mark}${c.bold}${this.title}${c.reset}`);
+
     if (this.detail) {
-      for (const l of this.detail.split('\n')) lines.push(`  ${c.dim}${l}${c.reset}`);
+      // Show only the first non-empty line of detail in the default render —
+      // tool stderr can be hundreds of lines and drowns out the fix.
+      const firstDetail = this.detail.split('\n').map((l) => l.trim()).find((l) => l.length > 0);
+      if (firstDetail) lines.push(`  ${c.dim}${firstDetail.slice(0, 200)}${c.reset}`);
     }
     lines.push(`  ${c.cyan}Fix:${c.reset} ${this.fix}`);
-    if (Object.keys(this.context).length > 0) {
+
+    if (verbose && Object.keys(this.context).length > 0) {
       lines.push(`  ${c.dim}Context: ${JSON.stringify(this.context)}${c.reset}`);
     }
     return lines.join('\n');
@@ -225,6 +242,17 @@ export const Errors = {
 
 /** Detect the shape of common spawn/library failures and translate to AdversaError. */
 export function diagnoseSpawnError(tool: string, code: number, stderr: string): AdversaError {
+  // nuclei exits 2 when it cannot find any templates to run — distinct from a real error
+  if (tool === 'nuclei' && code === 2) {
+    return new AdversaError({
+      code:   'TOOL_EXIT_NONZERO',
+      title:  'nuclei: no templates found',
+      detail: 'nuclei exited with code 2 — it could not find any templates in its search paths.',
+      fix:    'Run `nuclei -update-templates` to download the official template set, or set NUCLEI_TEMPLATE_DIR=/path/to/nuclei-templates.',
+      context:{ tool, code },
+    });
+  }
+
   if (code === -1 || /ENOENT/.test(stderr) || /not found/i.test(stderr)) {
     const hints: Record<string, string> = {
       naabu:   'Install: `brew install libpcap go && go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest` then add ~/go/bin to PATH.',
@@ -235,6 +263,19 @@ export function diagnoseSpawnError(tool: string, code: number, stderr: string): 
     return Errors.toolMissing(tool, hints[tool] ?? `Install ${tool} and ensure it's on PATH.`);
   }
   if (/libpcap|dyld.*pcap/i.test(stderr)) return Errors.toolLibpcapMissing(tool);
+
+  // Config-dir creation failure — most common when the tool was invoked with a
+  // non-writable HOME or XDG_CONFIG_HOME. Distinct from real OS permission denied.
+  if (/mkdir.*permission denied|failed to create.*directory|failed to write config/i.test(stderr)) {
+    return new AdversaError({
+      code:   'TOOL_PERMISSION_DENIED',
+      title:  `${tool} could not write its config directory`,
+      detail: stderr.slice(0, 300),
+      fix:    `Set ${tool === 'nuclei' ? 'NUCLEI_CONFIG_DIR' : 'a tool-specific config env var'} to a writable directory (e.g. \`export NUCLEI_CONFIG_DIR=$HOME/.config/nuclei\`) and restart the server.`,
+      context:{ tool },
+    });
+  }
+
   if (/permission denied|operation not permitted/i.test(stderr)) {
     return new AdversaError({
       code:   'TOOL_PERMISSION_DENIED',
@@ -244,5 +285,17 @@ export function diagnoseSpawnError(tool: string, code: number, stderr: string): 
       context:{ tool },
     });
   }
+
+  // Rate-limited / connection failures — usually means the target wasn't reachable
+  if (/connection refused|no route to host|timeout/i.test(stderr)) {
+    return new AdversaError({
+      code:   'TOOL_EXIT_NONZERO',
+      title:  `${tool} could not reach the target`,
+      detail: stderr.slice(0, 300),
+      fix:    `Verify the target is reachable: try \`ping <ip>\` from the same machine. For internal networks, ensure you're on the right VPN/segment.`,
+      context:{ tool },
+    });
+  }
+
   return Errors.toolExitNonzero(tool, code, stderr);
 }

@@ -90,13 +90,20 @@ function checkNode(): CheckResult {
   };
 }
 
-function checkTool(tool: string, installCmd: string, optional = false): CheckResult {
+function checkTool(tool: string, installCmd: string, optional = false, nativeFallback?: string): CheckResult {
   const p = which(tool);
   if (p) {
-    // Try to get version
     const v = spawnSync(tool, ['-version'], { encoding: 'utf8' });
     const versionLine = (v.stdout || v.stderr).split(/\r?\n/)[0]?.trim();
-    return { name: tool, status: 'ok', detail: versionLine || p, meta: { path: p } };
+    return { name: tool, status: 'ok', detail: `external: ${versionLine || p}`, meta: { path: p, mode: 'external' } };
+  }
+  if (nativeFallback) {
+    return {
+      name:   tool,
+      status: 'ok',
+      detail: `native fallback (${nativeFallback})`,
+      meta:   { mode: 'native' },
+    };
   }
   return {
     name:   tool,
@@ -219,11 +226,16 @@ export function buildDoctorCommand(): Command {
       checks.push(checkNodeModules());
       checks.push(checkDataDir());
 
-      // Scanner tools
-      checks.push(checkTool('naabu',     '`brew install libpcap go && go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest && export PATH=$HOME/go/bin:$PATH`'));
-      checks.push(checkTool('nmap',      '`brew install nmap`'));
-      checks.push(checkTool('nuclei',    '`brew install go && go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest && export PATH=$HOME/go/bin:$PATH`'));
-      checks.push(checkTool('testssl.sh', '`git clone https://github.com/drwetter/testssl.sh ~/testssl.sh && sudo ln -s ~/testssl.sh/testssl.sh /usr/local/bin/testssl.sh`', true));
+      // Scanner tools — most have native fallbacks now, so missing = warn not fail
+      checks.push(checkTool('naabu',     '`brew install libpcap go && go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest`',           true, 'TCP connect scan in Node'));
+      checks.push(checkTool('nmap',      '`brew install nmap`',                                                                                          false));
+      checks.push(checkTool('nuclei',    '`go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest`',                                      false));
+      checks.push(checkTool('testssl.sh','`git clone https://github.com/drwetter/testssl.sh ~/testssl.sh && sudo ln -s ~/testssl.sh/testssl.sh /usr/local/bin/testssl.sh`', true, 'basic cert + protocol check in Node'));
+      checks.push(checkTool('subfinder', '`go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest`',                                true, 'DNS bruteforce in Node'));
+      checks.push(checkTool('httpx',     '`go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest`',                                           true, 'fetch-based HTTP probe in Node'));
+      checks.push(checkTool('ffuf',      '`brew install ffuf` (+ `brew install seclists`)',                                                              true, 'GET vs embedded mini-wordlist in Node'));
+      checks.push(checkTool('whatweb',   '`brew install whatweb`',                                                                                       true, 'Wappalyzer-style rules in Node'));
+      checks.push(checkTool('ssh-audit', '`pip install ssh-audit`',                                                                                      true));
 
       // Configuration
       checks.push(checkEnvFile());

@@ -393,5 +393,871 @@
         "name": "Network Boundary Bridging"
       }
     ]
+  },
+  {
+    "id": "VAPT-INFO-001",
+    "title": "Live host: 192.168.1.1",
+    "severity": "INFO",
+    "host": "192.168.1.1",
+    "source": "host-discovery",
+    "evidence": [
+      {
+        "label": "host discovery",
+        "content": "Method: unknown · Source: auto-detected LAN: 192.168.1.0/24",
+        "timestamp": "2026-06-04T19:01:37.404Z"
+      },
+      {
+        "label": "host discovery",
+        "content": "Method: unknown · Source: auto-detected LAN: 192.168.1.0/24",
+        "timestamp": "2026-06-04T19:12:41.872Z"
+      },
+      {
+        "label": "host discovery",
+        "content": "Method: unknown · Source: auto-detected LAN: 192.168.1.0/24",
+        "timestamp": "2026-06-04T19:28:46.199Z"
+      },
+      {
+        "label": "host discovery",
+        "content": "Method: unknown · Source: auto-detected LAN: 192.168.1.0/24",
+        "timestamp": "2026-06-04T19:34:22.655Z"
+      }
+    ],
+    "status": "OPEN",
+    "timestamp": "2026-06-04T19:34:22.662Z"
+  },
+  {
+    "id": "VAPT-INFO-002",
+    "title": "Live host: 192.168.1.48",
+    "severity": "INFO",
+    "host": "192.168.1.48",
+    "source": "host-discovery",
+    "evidence": [
+      {
+        "label": "host discovery",
+        "content": "Method: unknown · Source: auto-detected LAN: 192.168.1.0/24",
+        "timestamp": "2026-06-04T19:01:37.404Z"
+      },
+      {
+        "label": "host discovery",
+        "content": "Method: unknown · Source: auto-detected LAN: 192.168.1.0/24",
+        "timestamp": "2026-06-04T19:12:41.872Z"
+      },
+      {
+        "label": "host discovery",
+        "content": "Method: unknown · Source: auto-detected LAN: 192.168.1.0/24",
+        "timestamp": "2026-06-04T19:28:46.199Z"
+      },
+      {
+        "label": "host discovery",
+        "content": "Method: unknown · Source: auto-detected LAN: 192.168.1.0/24",
+        "timestamp": "2026-06-04T19:34:22.655Z"
+      }
+    ],
+    "status": "OPEN",
+    "timestamp": "2026-06-04T19:34:22.662Z"
+  },
+  {
+    "id": "VAPT-INFO-001",
+    "title": "Live host: 10.160.8.104",
+    "severity": "INFO",
+    "host": "10.160.8.104",
+    "source": "host-discovery",
+    "evidence": [
+      {
+        "label": "host discovery",
+        "content": "Method: unknown · Source: auto-detected LAN: 10.160.8.0/24",
+        "timestamp": "2026-06-05T05:01:46.687Z"
+      }
+    ],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T05:01:46.687Z"
+  },
+  {
+    "id": "VAPT-INFO-001",
+    "title": "Live host: 192.168.0.1",
+    "severity": "INFO",
+    "host": "192.168.0.1",
+    "source": "host-discovery",
+    "evidence": [
+      {
+        "label": "host discovery",
+        "content": "Method: unknown · Source: auto-detected LAN: 192.168.0.0/24",
+        "timestamp": "2026-06-05T07:35:50.512Z"
+      }
+    ],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T07:35:50.512Z"
+  },
+  {
+    "id": "VAPT-INFO-002",
+    "title": "Live host: 192.168.0.2",
+    "severity": "INFO",
+    "host": "192.168.0.2",
+    "source": "host-discovery",
+    "evidence": [
+      {
+        "label": "host discovery",
+        "content": "Method: unknown · Source: auto-detected LAN: 192.168.0.0/24",
+        "timestamp": "2026-06-05T07:35:50.512Z"
+      }
+    ],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T07:35:50.512Z"
+  },
+  {
+    "id": "VAPT-INFO-003",
+    "title": "Live host: 192.168.0.34",
+    "severity": "INFO",
+    "host": "192.168.0.34",
+    "source": "host-discovery",
+    "evidence": [
+      {
+        "label": "host discovery",
+        "content": "Method: unknown · Source: auto-detected LAN: 192.168.0.0/24",
+        "timestamp": "2026-06-05T07:35:50.512Z"
+      }
+    ],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T07:35:50.512Z"
+  },
+  {
+    "id": "VAPT-INFO-004",
+    "title": "HTTP service: https://192.168.0.2:443",
+    "severity": "INFO",
+    "host": "192.168.0.2",
+    "port": "443",
+    "service": "http",
+    "source": "httpx",
+    "evidence": [
+      {
+        "label": "httpx",
+        "content": "{\"timestamp\":\"2026-06-05T13:07:31.661326+05:30\",\"port\":\"443\",\"url\":\"https://192.168.0.2:443\",\"input\":\"192.168.0.2:443\",\"scheme\":\"https\",\"content_type\":\"text/html\",\"method\":\"GET\",\"host\":\"192.168.0.2\",\"path\":\"/\",\"time\":\"3.232090458s\",\"a\":[\"192.168.0.2\"],\"tech\":[\"Java\",\"jQuery\"],\"words\":24316,\"lines\":2156,\"status_code\":200,\"content_length\":81182,\"failed\":false,\"knowledgebase\":{\"PageType\":\"nonerror\",\"pHash\":0}}",
+        "timestamp": "2026-06-05T07:37:26.872Z"
+      }
+    ],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T07:37:26.872Z"
+  },
+  {
+    "id": "VAPT-INFO-005",
+    "title": "HTTP service: http://192.168.0.2:80",
+    "severity": "INFO",
+    "host": "192.168.0.2",
+    "port": "80",
+    "service": "http",
+    "source": "httpx",
+    "evidence": [
+      {
+        "label": "httpx",
+        "content": "{\"timestamp\":\"2026-06-05T13:07:31.699531+05:30\",\"port\":\"80\",\"url\":\"http://192.168.0.2:80\",\"input\":\"192.168.0.2:80\",\"scheme\":\"http\",\"content_type\":\"text/html\",\"method\":\"GET\",\"host\":\"192.168.0.2\",\"path\":\"/\",\"time\":\"242.089917ms\",\"a\":[\"192.168.0.2\"],\"tech\":[\"Java\",\"jQuery\"],\"words\":24316,\"lines\":2156,\"status_code\":200,\"content_length\":81182,\"failed\":false,\"knowledgebase\":{\"PageType\":\"nonerror\",\"pHash\":0}}",
+        "timestamp": "2026-06-05T07:37:26.872Z"
+      }
+    ],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T07:37:26.872Z"
+  },
+  {
+    "id": "VAPT-INFO-006",
+    "title": "HTTP service: http://192.168.0.2:1900",
+    "severity": "INFO",
+    "host": "192.168.0.2",
+    "port": "1900",
+    "service": "Linux/4.4.198, UPnP/1.0, Portable SDK for UPnP devices/1.6.19",
+    "source": "httpx",
+    "evidence": [
+      {
+        "label": "httpx",
+        "content": "{\"timestamp\":\"2026-06-05T13:07:33.302439+05:30\",\"port\":\"1900\",\"url\":\"http://192.168.0.2:1900\",\"input\":\"192.168.0.2:1900\",\"scheme\":\"http\",\"webserver\":\"Linux/4.4.198, UPnP/1.0, Portable SDK for UPnP devices/1.6.19\",\"content_type\":\"text/html\",\"method\":\"GET\",\"host\":\"192.168.0.2\",\"path\":\"/\",\"time\":\"23.274833ms\",\"a\":[\"192.168.0.2\"],\"words\":3,\"lines\":1,\"status_code\":404,\"content_length\":48,\"failed\":false,\"knowledgebase\":{\"PageType\":\"error\",\"pHash\":0}}",
+        "timestamp": "2026-06-05T07:37:26.872Z"
+      }
+    ],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T07:37:26.872Z"
+  },
+  {
+    "id": "VAPT-INFO-007",
+    "title": "Tech stack: jQuery/1.8.3.",
+    "severity": "INFO",
+    "host": "192.168.0.2",
+    "port": 80,
+    "source": "whatweb",
+    "evidence": [
+      {
+        "label": "native fingerprint",
+        "content": "[{\"name\":\"jQuery\",\"category\":\"js\",\"version\":\"1.8.3.\"}]",
+        "timestamp": "2026-06-05T07:37:48.253Z"
+      }
+    ],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T07:37:48.253Z"
+  },
+  {
+    "id": "VAPT-INFO-001",
+    "title": "HTTP service: http://192.168.0.3:8080",
+    "severity": "INFO",
+    "host": "192.168.0.3",
+    "port": "8080",
+    "service": "nginx",
+    "source": "httpx",
+    "evidence": [
+      {
+        "label": "httpx",
+        "content": "{\"timestamp\":\"2026-06-05T17:04:38.149608+05:30\",\"port\":\"8080\",\"url\":\"http://192.168.0.3:8080\",\"input\":\"192.168.0.3:8080\",\"scheme\":\"http\",\"webserver\":\"nginx\",\"content_type\":\"text/html\",\"method\":\"GET\",\"host\":\"192.168.0.3\",\"path\":\"/\",\"time\":\"376.03625ms\",\"a\":[\"192.168.0.3\"],\"tech\":[\"Nginx\"],\"words\":129,\"lines\":56,\"status_code\":200,\"content_length\":1525,\"failed\":false,\"knowledgebase\":{\"PageType\":\"login\",\"pHash\":0}}",
+        "timestamp": "2026-06-05T11:34:36.537Z"
+      }
+    ],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T11:34:36.537Z",
+    "engagementId": "VAPT-1780659186885"
+  },
+  {
+    "id": "VAPT-INFO-002",
+    "title": "HTTP service: http://192.168.0.3:80",
+    "severity": "INFO",
+    "host": "192.168.0.3",
+    "port": "80",
+    "service": "nginx",
+    "source": "httpx",
+    "evidence": [
+      {
+        "label": "httpx",
+        "content": "{\"timestamp\":\"2026-06-05T17:04:38.149345+05:30\",\"port\":\"80\",\"url\":\"http://192.168.0.3:80\",\"input\":\"192.168.0.3:80\",\"scheme\":\"http\",\"webserver\":\"nginx\",\"content_type\":\"text/html\",\"method\":\"GET\",\"host\":\"192.168.0.3\",\"path\":\"/\",\"time\":\"372.506417ms\",\"a\":[\"192.168.0.3\"],\"tech\":[\"Nginx\"],\"words\":129,\"lines\":56,\"status_code\":200,\"content_length\":1525,\"failed\":false,\"knowledgebase\":{\"PageType\":\"login\",\"pHash\":0}}",
+        "timestamp": "2026-06-05T11:34:36.537Z"
+      }
+    ],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T11:34:36.537Z",
+    "engagementId": "VAPT-1780659186885"
+  },
+  {
+    "id": "VAPT-INFO-003",
+    "title": "HTTP service: https://192.168.0.3:443",
+    "severity": "INFO",
+    "host": "192.168.0.3",
+    "port": "443",
+    "service": "nginx",
+    "source": "httpx",
+    "evidence": [
+      {
+        "label": "httpx",
+        "content": "{\"timestamp\":\"2026-06-05T17:04:38.260638+05:30\",\"port\":\"443\",\"url\":\"https://192.168.0.3:443\",\"input\":\"192.168.0.3:443\",\"scheme\":\"https\",\"webserver\":\"nginx\",\"content_type\":\"text/html\",\"method\":\"GET\",\"host\":\"192.168.0.3\",\"path\":\"/\",\"time\":\"591.268375ms\",\"a\":[\"192.168.0.3\"],\"tech\":[\"HSTS\",\"Nginx\"],\"words\":129,\"lines\":56,\"status_code\":200,\"content_length\":1525,\"failed\":false,\"knowledgebase\":{\"PageType\":\"login\",\"pHash\":0}}",
+        "timestamp": "2026-06-05T11:34:36.537Z"
+      }
+    ],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T11:34:36.537Z",
+    "engagementId": "VAPT-1780659186885"
+  },
+  {
+    "id": "VAPT-INFO-004",
+    "title": "HTTP service: http://192.168.0.1:80",
+    "severity": "INFO",
+    "host": "192.168.0.1",
+    "port": "80",
+    "service": "http",
+    "source": "httpx",
+    "evidence": [
+      {
+        "label": "httpx",
+        "content": "{\"timestamp\":\"2026-06-05T17:04:41.051407+05:30\",\"port\":\"80\",\"url\":\"http://192.168.0.1:80\",\"input\":\"192.168.0.1:80\",\"scheme\":\"http\",\"content_type\":\"text/html\",\"method\":\"GET\",\"host\":\"192.168.0.1\",\"path\":\"/\",\"time\":\"191.135166ms\",\"a\":[\"192.168.0.1\"],\"tech\":[\"Java\",\"jQuery\"],\"words\":24316,\"lines\":2156,\"status_code\":200,\"content_length\":81182,\"failed\":false,\"knowledgebase\":{\"PageType\":\"nonerror\",\"pHash\":0}}",
+        "timestamp": "2026-06-05T11:34:36.537Z"
+      }
+    ],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T11:34:36.537Z",
+    "engagementId": "VAPT-1780659186885"
+  },
+  {
+    "id": "VAPT-INFO-005",
+    "title": "HTTP service: http://192.168.0.1:1900",
+    "severity": "INFO",
+    "host": "192.168.0.1",
+    "port": "1900",
+    "service": "Linux/4.4.198, UPnP/1.0, Portable SDK for UPnP devices/1.6.19",
+    "source": "httpx",
+    "evidence": [
+      {
+        "label": "httpx",
+        "content": "{\"timestamp\":\"2026-06-05T17:04:42.716846+05:30\",\"port\":\"1900\",\"url\":\"http://192.168.0.1:1900\",\"input\":\"192.168.0.1:1900\",\"scheme\":\"http\",\"webserver\":\"Linux/4.4.198, UPnP/1.0, Portable SDK for UPnP devices/1.6.19\",\"content_type\":\"text/html\",\"method\":\"GET\",\"host\":\"192.168.0.1\",\"path\":\"/\",\"time\":\"10.121958ms\",\"a\":[\"192.168.0.1\"],\"words\":3,\"lines\":1,\"status_code\":404,\"content_length\":48,\"failed\":false,\"knowledgebase\":{\"PageType\":\"error\",\"pHash\":0}}",
+        "timestamp": "2026-06-05T11:34:36.537Z"
+      }
+    ],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T11:34:36.537Z",
+    "engagementId": "VAPT-1780659186885"
+  },
+  {
+    "id": "VAPT-INFO-006",
+    "title": "Tech stack: nginx",
+    "severity": "INFO",
+    "host": "192.168.0.3",
+    "port": 8080,
+    "source": "whatweb",
+    "evidence": [
+      {
+        "label": "native fingerprint",
+        "content": "[{\"name\":\"nginx\",\"category\":\"server\"}]",
+        "timestamp": "2026-06-05T11:34:57.730Z"
+      },
+      {
+        "label": "native fingerprint",
+        "content": "[{\"name\":\"nginx\",\"category\":\"server\"}]",
+        "timestamp": "2026-06-05T11:34:57.730Z"
+      },
+      {
+        "label": "native fingerprint",
+        "content": "[{\"name\":\"nginx\",\"category\":\"server\"}]",
+        "timestamp": "2026-06-05T11:34:57.730Z"
+      }
+    ],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T11:42:08.855Z",
+    "engagementId": "VAPT-1780659186885"
+  },
+  {
+    "id": "VAPT-HIGH-001",
+    "title": "engine_problem: No engine or GOST support via engine with your /usr/bin/open",
+    "severity": "HIGH",
+    "host": "192.168.0.3",
+    "port": 443,
+    "evidence": [
+      {
+        "label": "testssl output",
+        "content": "No engine or GOST support via engine with your /usr/bin/openssl",
+        "timestamp": "2026-06-05T11:42:07.933Z"
+      }
+    ],
+    "source": "testssl",
+    "cveIds": [],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T11:42:07.933Z",
+    "engagementId": "VAPT-1780659186885",
+    "slaDeadline": "2026-06-08T11:42:08.855Z"
+  },
+  {
+    "id": "VAPT-HIGH-002",
+    "title": "cmdline_fast_depreciation: '--fast' can have some undesired side effects thus it is not",
+    "severity": "HIGH",
+    "host": "192.168.0.3",
+    "port": 443,
+    "evidence": [
+      {
+        "label": "testssl output",
+        "content": "'--fast' can have some undesired side effects thus it is not recommended to use anymore",
+        "timestamp": "2026-06-05T11:42:07.933Z"
+      }
+    ],
+    "source": "testssl",
+    "cveIds": [],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T11:42:07.933Z",
+    "engagementId": "VAPT-1780659186885",
+    "slaDeadline": "2026-06-08T11:42:08.855Z"
+  },
+  {
+    "id": "VAPT-HIGH-003",
+    "title": "cmdline_ip-target: Target is not a server name: results may be completely wrong",
+    "severity": "HIGH",
+    "host": "192.168.0.3",
+    "port": 443,
+    "evidence": [
+      {
+        "label": "testssl output",
+        "content": "Target is not a server name: results may be completely wrong, at minimum trust may show false results.",
+        "timestamp": "2026-06-05T11:42:07.933Z"
+      }
+    ],
+    "source": "testssl",
+    "cveIds": [],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T11:42:07.933Z",
+    "engagementId": "VAPT-1780659186885",
+    "slaDeadline": "2026-06-08T11:42:08.855Z"
+  },
+  {
+    "id": "VAPT-LOW-001",
+    "title": "cipherlist_OBSOLETED: offered",
+    "severity": "LOW",
+    "host": "192.168.0.3",
+    "port": 443,
+    "evidence": [
+      {
+        "label": "testssl output",
+        "content": "offered",
+        "timestamp": "2026-06-05T11:42:07.933Z"
+      }
+    ],
+    "source": "testssl",
+    "cveIds": [],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T11:42:07.933Z",
+    "engagementId": "VAPT-1780659186885",
+    "slaDeadline": "2026-07-05T11:42:08.855Z"
+  },
+  {
+    "id": "VAPT-LOW-002",
+    "title": "cipher-tls1_2_xc028: TLSv1.2   xc028   ECDHE-RSA-AES256-SHA384           ECDH 253",
+    "severity": "LOW",
+    "host": "192.168.0.3",
+    "port": 443,
+    "evidence": [
+      {
+        "label": "testssl output",
+        "content": "TLSv1.2   xc028   ECDHE-RSA-AES256-SHA384           ECDH 253   AES         256      TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384",
+        "timestamp": "2026-06-05T11:42:07.933Z"
+      }
+    ],
+    "source": "testssl",
+    "cveIds": [],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T11:42:07.933Z",
+    "engagementId": "VAPT-1780659186885",
+    "slaDeadline": "2026-07-05T11:42:08.855Z"
+  },
+  {
+    "id": "VAPT-LOW-003",
+    "title": "cipher-tls1_2_xc014: TLSv1.2   xc014   ECDHE-RSA-AES256-SHA              ECDH 253",
+    "severity": "LOW",
+    "host": "192.168.0.3",
+    "port": 443,
+    "evidence": [
+      {
+        "label": "testssl output",
+        "content": "TLSv1.2   xc014   ECDHE-RSA-AES256-SHA              ECDH 253   AES         256      TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
+        "timestamp": "2026-06-05T11:42:07.933Z"
+      }
+    ],
+    "source": "testssl",
+    "cveIds": [],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T11:42:07.933Z",
+    "engagementId": "VAPT-1780659186885",
+    "slaDeadline": "2026-07-05T11:42:08.855Z"
+  },
+  {
+    "id": "VAPT-LOW-004",
+    "title": "cipher-tls1_2_x6b: TLSv1.2   x6b     DHE-RSA-AES256-SHA256             DH 2048 ",
+    "severity": "LOW",
+    "host": "192.168.0.3",
+    "port": 443,
+    "evidence": [
+      {
+        "label": "testssl output",
+        "content": "TLSv1.2   x6b     DHE-RSA-AES256-SHA256             DH 2048    AES         256      TLS_DHE_RSA_WITH_AES_256_CBC_SHA256",
+        "timestamp": "2026-06-05T11:42:07.933Z"
+      }
+    ],
+    "source": "testssl",
+    "cveIds": [],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T11:42:07.933Z",
+    "engagementId": "VAPT-1780659186885",
+    "slaDeadline": "2026-07-05T11:42:08.855Z"
+  },
+  {
+    "id": "VAPT-LOW-005",
+    "title": "cipher-tls1_2_x39: TLSv1.2   x39     DHE-RSA-AES256-SHA                DH 2048 ",
+    "severity": "LOW",
+    "host": "192.168.0.3",
+    "port": 443,
+    "evidence": [
+      {
+        "label": "testssl output",
+        "content": "TLSv1.2   x39     DHE-RSA-AES256-SHA                DH 2048    AES         256      TLS_DHE_RSA_WITH_AES_256_CBC_SHA",
+        "timestamp": "2026-06-05T11:42:07.933Z"
+      }
+    ],
+    "source": "testssl",
+    "cveIds": [],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T11:42:07.933Z",
+    "engagementId": "VAPT-1780659186885",
+    "slaDeadline": "2026-07-05T11:42:08.855Z"
+  },
+  {
+    "id": "VAPT-LOW-006",
+    "title": "cipher-tls1_2_x3d: TLSv1.2   x3d     AES256-SHA256                     RSA     ",
+    "severity": "LOW",
+    "host": "192.168.0.3",
+    "port": 443,
+    "evidence": [
+      {
+        "label": "testssl output",
+        "content": "TLSv1.2   x3d     AES256-SHA256                     RSA        AES         256      TLS_RSA_WITH_AES_256_CBC_SHA256",
+        "timestamp": "2026-06-05T11:42:07.933Z"
+      }
+    ],
+    "source": "testssl",
+    "cveIds": [],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T11:42:07.933Z",
+    "engagementId": "VAPT-1780659186885",
+    "slaDeadline": "2026-07-05T11:42:08.855Z"
+  },
+  {
+    "id": "VAPT-LOW-007",
+    "title": "cipher-tls1_2_x35: TLSv1.2   x35     AES256-SHA                        RSA     ",
+    "severity": "LOW",
+    "host": "192.168.0.3",
+    "port": 443,
+    "evidence": [
+      {
+        "label": "testssl output",
+        "content": "TLSv1.2   x35     AES256-SHA                        RSA        AES         256      TLS_RSA_WITH_AES_256_CBC_SHA",
+        "timestamp": "2026-06-05T11:42:07.933Z"
+      }
+    ],
+    "source": "testssl",
+    "cveIds": [],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T11:42:07.933Z",
+    "engagementId": "VAPT-1780659186885",
+    "slaDeadline": "2026-07-05T11:42:08.855Z"
+  },
+  {
+    "id": "VAPT-LOW-008",
+    "title": "cipher-tls1_2_xc027: TLSv1.2   xc027   ECDHE-RSA-AES128-SHA256           ECDH 253",
+    "severity": "LOW",
+    "host": "192.168.0.3",
+    "port": 443,
+    "evidence": [
+      {
+        "label": "testssl output",
+        "content": "TLSv1.2   xc027   ECDHE-RSA-AES128-SHA256           ECDH 253   AES         128      TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256",
+        "timestamp": "2026-06-05T11:42:07.933Z"
+      }
+    ],
+    "source": "testssl",
+    "cveIds": [],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T11:42:07.933Z",
+    "engagementId": "VAPT-1780659186885",
+    "slaDeadline": "2026-07-05T11:42:08.855Z"
+  },
+  {
+    "id": "VAPT-LOW-009",
+    "title": "cipher-tls1_2_xc013: TLSv1.2   xc013   ECDHE-RSA-AES128-SHA              ECDH 253",
+    "severity": "LOW",
+    "host": "192.168.0.3",
+    "port": 443,
+    "evidence": [
+      {
+        "label": "testssl output",
+        "content": "TLSv1.2   xc013   ECDHE-RSA-AES128-SHA              ECDH 253   AES         128      TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
+        "timestamp": "2026-06-05T11:42:07.933Z"
+      }
+    ],
+    "source": "testssl",
+    "cveIds": [],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T11:42:07.933Z",
+    "engagementId": "VAPT-1780659186885",
+    "slaDeadline": "2026-07-05T11:42:08.855Z"
+  },
+  {
+    "id": "VAPT-LOW-010",
+    "title": "cipher-tls1_2_x67: TLSv1.2   x67     DHE-RSA-AES128-SHA256             DH 2048 ",
+    "severity": "LOW",
+    "host": "192.168.0.3",
+    "port": 443,
+    "evidence": [
+      {
+        "label": "testssl output",
+        "content": "TLSv1.2   x67     DHE-RSA-AES128-SHA256             DH 2048    AES         128      TLS_DHE_RSA_WITH_AES_128_CBC_SHA256",
+        "timestamp": "2026-06-05T11:42:07.933Z"
+      }
+    ],
+    "source": "testssl",
+    "cveIds": [],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T11:42:07.933Z",
+    "engagementId": "VAPT-1780659186885",
+    "slaDeadline": "2026-07-05T11:42:08.855Z"
+  },
+  {
+    "id": "VAPT-LOW-011",
+    "title": "cipher-tls1_2_x33: TLSv1.2   x33     DHE-RSA-AES128-SHA                DH 2048 ",
+    "severity": "LOW",
+    "host": "192.168.0.3",
+    "port": 443,
+    "evidence": [
+      {
+        "label": "testssl output",
+        "content": "TLSv1.2   x33     DHE-RSA-AES128-SHA                DH 2048    AES         128      TLS_DHE_RSA_WITH_AES_128_CBC_SHA",
+        "timestamp": "2026-06-05T11:42:07.933Z"
+      }
+    ],
+    "source": "testssl",
+    "cveIds": [],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T11:42:07.933Z",
+    "engagementId": "VAPT-1780659186885",
+    "slaDeadline": "2026-07-05T11:42:08.855Z"
+  },
+  {
+    "id": "VAPT-LOW-012",
+    "title": "cipher-tls1_2_x3c: TLSv1.2   x3c     AES128-SHA256                     RSA     ",
+    "severity": "LOW",
+    "host": "192.168.0.3",
+    "port": 443,
+    "evidence": [
+      {
+        "label": "testssl output",
+        "content": "TLSv1.2   x3c     AES128-SHA256                     RSA        AES         128      TLS_RSA_WITH_AES_128_CBC_SHA256",
+        "timestamp": "2026-06-05T11:42:07.933Z"
+      }
+    ],
+    "source": "testssl",
+    "cveIds": [],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T11:42:07.933Z",
+    "engagementId": "VAPT-1780659186885",
+    "slaDeadline": "2026-07-05T11:42:08.855Z"
+  },
+  {
+    "id": "VAPT-LOW-013",
+    "title": "cipher-tls1_2_x2f: TLSv1.2   x2f     AES128-SHA                        RSA     ",
+    "severity": "LOW",
+    "host": "192.168.0.3",
+    "port": 443,
+    "evidence": [
+      {
+        "label": "testssl output",
+        "content": "TLSv1.2   x2f     AES128-SHA                        RSA        AES         128      TLS_RSA_WITH_AES_128_CBC_SHA",
+        "timestamp": "2026-06-05T11:42:07.933Z"
+      }
+    ],
+    "source": "testssl",
+    "cveIds": [],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T11:42:07.933Z",
+    "engagementId": "VAPT-1780659186885",
+    "slaDeadline": "2026-07-05T11:42:08.855Z"
+  },
+  {
+    "id": "VAPT-LOW-014",
+    "title": "FS_KEMs: No KEMs offered",
+    "severity": "LOW",
+    "host": "192.168.0.3",
+    "port": 443,
+    "evidence": [
+      {
+        "label": "testssl output",
+        "content": "No KEMs offered",
+        "timestamp": "2026-06-05T11:42:07.933Z"
+      }
+    ],
+    "source": "testssl",
+    "cveIds": [],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T11:42:07.933Z",
+    "engagementId": "VAPT-1780659186885",
+    "slaDeadline": "2026-07-05T11:42:08.855Z"
+  },
+  {
+    "id": "VAPT-LOW-015",
+    "title": "cert_serialNumberLen: 4 is not enough entropy",
+    "severity": "LOW",
+    "host": "192.168.0.3",
+    "port": 443,
+    "evidence": [
+      {
+        "label": "testssl output",
+        "content": "4 is not enough entropy",
+        "timestamp": "2026-06-05T11:42:07.933Z"
+      }
+    ],
+    "source": "testssl",
+    "cveIds": [],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T11:42:07.933Z",
+    "engagementId": "VAPT-1780659186885",
+    "slaDeadline": "2026-07-05T11:42:08.855Z"
+  },
+  {
+    "id": "VAPT-HIGH-004",
+    "title": "cert_subjectAltName: No SAN, browsers are complaining",
+    "severity": "HIGH",
+    "host": "192.168.0.3",
+    "port": 443,
+    "evidence": [
+      {
+        "label": "testssl output",
+        "content": "No SAN, browsers are complaining",
+        "timestamp": "2026-06-05T11:42:07.933Z"
+      }
+    ],
+    "source": "testssl",
+    "cveIds": [],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T11:42:07.933Z",
+    "engagementId": "VAPT-1780659186885",
+    "slaDeadline": "2026-06-08T11:42:08.855Z"
+  },
+  {
+    "id": "VAPT-HIGH-005",
+    "title": "cert_trust: certificate does not match supplied URI",
+    "severity": "HIGH",
+    "host": "192.168.0.3",
+    "port": 443,
+    "evidence": [
+      {
+        "label": "testssl output",
+        "content": "certificate does not match supplied URI",
+        "timestamp": "2026-06-05T11:42:07.933Z"
+      }
+    ],
+    "source": "testssl",
+    "cveIds": [],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T11:42:07.933Z",
+    "engagementId": "VAPT-1780659186885",
+    "slaDeadline": "2026-06-08T11:42:08.855Z"
+  },
+  {
+    "id": "VAPT-CRIT-001",
+    "title": "cert_chain_of_trust: failed (chain incomplete).",
+    "severity": "CRITICAL",
+    "host": "192.168.0.3",
+    "port": 443,
+    "evidence": [
+      {
+        "label": "testssl output",
+        "content": "failed (chain incomplete).",
+        "timestamp": "2026-06-05T11:42:07.933Z"
+      }
+    ],
+    "source": "testssl",
+    "cveIds": [],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T11:42:07.933Z",
+    "engagementId": "VAPT-1780659186885",
+    "slaDeadline": "2026-06-06T11:42:08.855Z"
+  },
+  {
+    "id": "VAPT-HIGH-006",
+    "title": "cert_extlifeSpan: 3650 days",
+    "severity": "HIGH",
+    "host": "192.168.0.3",
+    "port": 443,
+    "evidence": [
+      {
+        "label": "testssl output",
+        "content": "3650 days",
+        "timestamp": "2026-06-05T11:42:07.933Z"
+      }
+    ],
+    "source": "testssl",
+    "cveIds": [],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T11:42:07.933Z",
+    "engagementId": "VAPT-1780659186885",
+    "slaDeadline": "2026-06-08T11:42:08.855Z"
+  },
+  {
+    "id": "VAPT-HIGH-007",
+    "title": "cert_revocation: Neither CRL nor OCSP URI provided",
+    "severity": "HIGH",
+    "host": "192.168.0.3",
+    "port": 443,
+    "evidence": [
+      {
+        "label": "testssl output",
+        "content": "Neither CRL nor OCSP URI provided",
+        "timestamp": "2026-06-05T11:42:07.933Z"
+      }
+    ],
+    "source": "testssl",
+    "cveIds": [],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T11:42:07.933Z",
+    "engagementId": "VAPT-1780659186885",
+    "slaDeadline": "2026-06-08T11:42:08.855Z"
+  },
+  {
+    "id": "VAPT-HIGH-008",
+    "title": "CRIME_TLS: Check failed, couldn't connect",
+    "severity": "HIGH",
+    "host": "192.168.0.3",
+    "port": 443,
+    "evidence": [
+      {
+        "label": "testssl output",
+        "content": "Check failed, couldn't connect",
+        "timestamp": "2026-06-05T11:42:07.933Z"
+      }
+    ],
+    "source": "testssl",
+    "cveIds": [
+      "CVE-2012-4929"
+    ],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T11:42:07.933Z",
+    "engagementId": "VAPT-1780659186885",
+    "slaDeadline": "2026-06-08T11:42:08.855Z"
+  },
+  {
+    "id": "VAPT-MED-001",
+    "title": "BREACH: potentially VULNERABLE, gzip deflate compress br HTTP compre",
+    "severity": "MEDIUM",
+    "host": "192.168.0.3",
+    "port": 443,
+    "evidence": [
+      {
+        "label": "testssl output",
+        "content": "potentially VULNERABLE, gzip deflate compress br HTTP compression detected  - only supplied '/' tested",
+        "timestamp": "2026-06-05T11:42:07.933Z"
+      }
+    ],
+    "source": "testssl",
+    "cveIds": [
+      "CVE-2013-3587"
+    ],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T11:42:07.933Z",
+    "engagementId": "VAPT-1780659186885",
+    "slaDeadline": "2026-06-12T11:42:08.855Z"
+  },
+  {
+    "id": "VAPT-LOW-016",
+    "title": "LUCKY13: potentially vulnerable, uses TLS CBC ciphers",
+    "severity": "LOW",
+    "host": "192.168.0.3",
+    "port": 443,
+    "evidence": [
+      {
+        "label": "testssl output",
+        "content": "potentially vulnerable, uses TLS CBC ciphers",
+        "timestamp": "2026-06-05T11:42:07.933Z"
+      }
+    ],
+    "source": "testssl",
+    "cveIds": [
+      "CVE-2013-0169"
+    ],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T11:42:07.933Z",
+    "engagementId": "VAPT-1780659186885",
+    "slaDeadline": "2026-07-05T11:42:08.855Z"
+  },
+  {
+    "id": "VAPT-CRIT-002",
+    "title": "overall_grade: M",
+    "severity": "CRITICAL",
+    "host": "192.168.0.3",
+    "port": 443,
+    "evidence": [
+      {
+        "label": "testssl output",
+        "content": "M",
+        "timestamp": "2026-06-05T11:42:07.933Z"
+      }
+    ],
+    "source": "testssl",
+    "cveIds": [],
+    "status": "OPEN",
+    "timestamp": "2026-06-05T11:42:07.933Z",
+    "engagementId": "VAPT-1780659186885",
+    "slaDeadline": "2026-06-06T11:42:08.855Z"
   }
 ]

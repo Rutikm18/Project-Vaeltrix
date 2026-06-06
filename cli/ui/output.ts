@@ -76,18 +76,41 @@ export function scanHeader(targets: string[], profile: string, stealth: number, 
 
 // ── Stage lines ─────────────────────────────────────────────────
 const STAGE_LABEL: Record<string, string> = {
-  naabu:    "Port Scanner",
-  nmap:     "SVC Probe",
-  nuclei:   "CVE Engine",
-  testssl:  "TLS Analyzer",
-  pipeline: "Pipeline",
+  subfinder:         "Subdomain Enum",
+  'dns-recon':       "DNS Recon",
+  'host-discovery':  "Host Discovery",
+  naabu:             "Port Scanner",
+  'udp-scan':        "UDP Scan",
+  nmap:              "SVC Probe",
+  'os-detect':       "OS Fingerprint",
+  'smb-enum':        "SMB Enum",
+  'netbios-enum':    "NetBIOS Enum",
+  'snmp-enum':       "SNMP Enum",
+  'ldap-enum':       "LDAP Enum",
+  'rpc-enum':        "RPC Enum",
+  'nfs-enum':        "NFS Enum",
+  'rdp-fingerprint': "RDP Fingerprint",
+  'db-enum':         "DB Service Enum",
+  httpx:             "HTTP Probe",
+  whatweb:           "Tech Fingerprint",
+  ffuf:              "Dir Buster",
+  nuclei:            "CVE Engine",
+  testssl:           "TLS Analyzer",
+  'ssh-audit':       "SSH Audit",
+  pipeline:          "Pipeline",
 };
 
 const STAGE_COL: Record<string, string> = {
-  naabu:   c.bBlue,
-  nmap:    c.bCyan,
-  nuclei:  c.magenta,
-  testssl: c.yellow,
+  subfinder:        c.gray,
+  'host-discovery': c.blue,
+  naabu:            c.bBlue,
+  nmap:             c.bCyan,
+  httpx:            c.green,
+  whatweb:          c.bGreen,
+  ffuf:             c.bYellow,
+  nuclei:           c.magenta,
+  testssl:          c.yellow,
+  'ssh-audit':      c.cyan,
 };
 
 export function stageStart(stage: string) {
@@ -125,15 +148,36 @@ export function stageError(stage: string, error: string) {
 // ── Host discovered ─────────────────────────────────────────────
 export function hostLine(host: DiscoveredHost) {
   ln(); // end progress \r line if active
-  const ports   = host.ports.slice(0, 12).join(", ") +
-    (host.ports.length > 12 ? ` …+${host.ports.length - 12}` : "");
-  const svcList = host.services
-    .slice(0, 4)
-    .map((s) => `${s.port}/${s.name ?? s.proto}`)
-    .join("  ");
+
   const ip = `${c.bCyan}${host.ip}${c.reset}`;
   const hn = host.hostnames?.[0] ? `  ${c.gray}(${host.hostnames[0]})${c.reset}` : "";
-  ln(`  ${c.gray}[HOST]${c.reset}  ${ip}${hn}   ports: ${c.white}${ports}${c.reset}${svcList ? `  services: ${c.gray}${svcList}${c.reset}` : ""}`);
+
+  // First line: IP + port list, or "(live)" when ports haven't been scanned yet
+  if (host.ports.length > 0) {
+    const portList = host.ports.slice(0, 12).join(", ") +
+      (host.ports.length > 12 ? ` …+${host.ports.length - 12}` : "");
+    ln(`  ${c.gray}[HOST]${c.reset}  ${ip}${hn}   ${c.gray}ports:${c.reset} ${c.white}${portList}${c.reset}`);
+  } else {
+    ln(`  ${c.gray}[HOST]${c.reset}  ${ip}${hn}   ${c.dim}(live)${c.reset}`);
+  }
+
+  // Per-service lines — three tiers:
+  //   version known  → "22/ssh  dropbear_2020.80"
+  //   protocol only  → "22/ssh?  (banner only — no version)"
+  //   port open only → "22/tcp  (open)"  — naabu gave us a port but no service info yet
+  const sorted = [...host.services].sort((a, b) => a.port - b.port);
+  for (const s of sorted) {
+    const name = s.name ?? s.proto;
+    let tag: string;
+    if (s.version) {
+      tag = `${c.white}${s.port}/${name}${c.reset}  ${c.gray}${s.version}${c.reset}`;
+    } else if (s.name) {
+      tag = `${c.white}${s.port}/${name}${c.reset}${c.yellow}?${c.reset}  ${c.gray}(banner only — no version)${c.reset}`;
+    } else {
+      tag = `${c.white}${s.port}/tcp${c.reset}  ${c.dim}(open)${c.reset}`;
+    }
+    ln(`          ${tag}`);
+  }
 }
 
 // ── Finding ─────────────────────────────────────────────────────

@@ -12,9 +12,22 @@ import { buildEngagementCommand } from "./commands/engagement";
 import { buildReportCommand }     from "./commands/report";
 import { buildInteractiveCommand, runInteractive } from "./commands/interactive";
 import { buildDoctorCommand }    from "./commands/doctor";
+import { buildToolsCommand }     from "./commands/tools";
 import { AdversaError }          from "../lib/errors";
 
-const VERSION = "0.6.0";
+const VERSION = "0.7.0";
+
+// ── Crash guards — a single bad host or rogue Promise must never silently kill
+// the wizard. Log to stderr and keep running. Bare process.exit would have to
+// be called explicitly elsewhere.
+process.on('unhandledRejection', (reason) => {
+  const msg = reason instanceof Error ? `${reason.message}\n${reason.stack ?? ''}` : String(reason);
+  process.stderr.write(`\x1b[33m[warn] unhandledRejection:\x1b[0m ${msg}\n`);
+});
+process.on('uncaughtException', (err) => {
+  process.stderr.write(`\x1b[33m[warn] uncaughtException:\x1b[0m ${err.message}\n`);
+  if (err.stack) process.stderr.write(err.stack + '\n');
+});
 
 const program = new Command();
 
@@ -50,8 +63,9 @@ program.addCommand(buildReportCommand());
 // ── Admin
 program.addCommand(buildAdminCommand());
 
-// ── Diagnostics
+// ── Diagnostics + bundled tools
 program.addCommand(buildDoctorCommand());
+program.addCommand(buildToolsCommand());
 
 program.parseAsync(process.argv).catch((e: unknown) => {
   // Typed errors render themselves with title + fix; raw errors get a generic
